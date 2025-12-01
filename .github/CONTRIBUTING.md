@@ -1,6 +1,6 @@
 ## **Before trying to contribute**
-Just don't contribute. You'll save your mental health, and I will save time trying to understand your code. Simply open an issue, and I will get to it.  
-The code is total mess that only I can efficiently navigate through it, and if someone else adds any-quality code to it, it will only get harder for me.  
+Just don't contribute. You'll save your mental health, and I will save time trying to understand your code. Open an issue, and I will get to it.  
+The code is total mess that only I can efficiently navigate through, and if someone else adds any-quality code to it, it will only get harder for me.  
 Mostly any PR will be rejected, sorry.  
 
 

@@ -602,6 +602,10 @@ class Endcord:
         if not self.forum and self.messages:
             self.add_to_channel_cache(self.active_channel["channel_id"], self.messages, self.active_channel.get("pinned", False))
 
+        # remove unread line for previous channel
+        if self.active_channel["channel_id"] and self.active_channel["channel_id"] in self.read_state:
+            self.read_state[self.active_channel["channel_id"]]["last_acked_unreads_line"] = None
+
         # update active channel
         self.active_channel["guild_id"] = guild_id
         self.active_channel["guild_name"] = guild_name
@@ -5192,7 +5196,9 @@ class Endcord:
         # check chanels
         channel = self.read_state.get(target_id)
         if channel and channel["last_message_id"] and int(channel["last_acked_message_id"]) < int(channel["last_message_id"]):
-            self.set_channel_seen(target_id, update_line=True)
+            self.set_channel_seen(target_id)
+            if target_id in self.read_state and "last_acked_unreads_line" in self.read_state[target_id]:
+                self.read_state[target_id]["last_acked_unreads_line"] = None
         else:
             channels = []
 
@@ -5232,11 +5238,14 @@ class Endcord:
                     self.update_extra_line("Network error.")
                     return
                 for channel in channels:
-                    self.set_channel_seen(channel["channel_id"], ack=False, update_tree=False, update_line=True)
+                    channel_id = channel["channel_id"]
+                    self.set_channel_seen(channel_id, ack=False, update_tree=False)
+                    if channel_id in self.read_state and "last_acked_unreads_line" in self.read_state[channel_id]:
+                        self.read_state[channel_id]["last_acked_unreads_line"] = None
                 self.update_tree()
 
 
-    def set_channel_seen(self, channel_id, message_id=None, ack=True, force=False, update_tree=True, update_line=False):
+    def set_channel_seen(self, channel_id, message_id=None, ack=True, force=False, update_tree=True):
         """Set one channel as seen"""
         channel = self.read_state.get(channel_id)
         if channel:
@@ -5254,8 +5263,7 @@ class Endcord:
                     if not this_channel:
                         remove_notification = True
                     self.read_state[channel_id]["last_acked_message_id"] = message_id
-                    if update_line and "last_acked_unreads_line" in channel:
-                        self.read_state[channel_id]["last_acked_unreads_line"] = None
+                    self.read_state[channel_id]["mentions"] = []
                     if update_tree:
                         self.update_tree()
 
@@ -5566,12 +5574,15 @@ class Endcord:
                     self.typing.pop(num)
                     update_status_line = True
                     break
-            if my_message and self.slowmodes and self.slowmodes.get(channel_id):
-                if not self.slowmode_times.get(channel_id):
-                    self.slowmode_times[channel_id] = self.slowmodes.get(channel_id, 0)
-                if not self.slowmode_thread or not self.slowmode_thread.is_alive():
-                    self.slowmode_thread = threading.Thread(target=self.wait_slowmode, daemon=True, args=())
-                    self.slowmode_thread.start()
+            if my_message:
+                if self.slowmodes and self.slowmodes.get(channel_id):
+                    if not self.slowmode_times.get(channel_id):
+                        self.slowmode_times[channel_id] = self.slowmodes.get(channel_id, 0)
+                    if not self.slowmode_thread or not self.slowmode_thread.is_alive():
+                        self.slowmode_thread = threading.Thread(target=self.wait_slowmode, daemon=True, args=())
+                        self.slowmode_thread.start()
+                if self.read_state.get(channel_id):
+                    self.read_state[channel_id]["last_acked_unreads_line"] = None
             if update_status_line:
                 self.update_status_line()
         else:
@@ -5587,8 +5598,7 @@ class Endcord:
                             self.messages[num]["deleted"] = True
                         else:
                             self.messages.pop(num)
-                        if num == 0:
-                            self.last_message_id = self.get_chat_last_message_id()
+                        self.last_message_id = self.get_chat_last_message_id()
                         if num < selected_line and not self.keep_deleted:
                             self.update_chat(change_amount=-1, scroll=False)
                         else:
@@ -6664,7 +6674,7 @@ class Endcord:
                     self.new_unreads = False
                     self.this_uread = False
                     self.update_status_line()
-                    self.set_channel_seen(self.active_channel["channel_id"], self.get_chat_last_message_id(), update_line=True)
+                    self.set_channel_seen(self.active_channel["channel_id"], self.get_chat_last_message_id())
 
             # send pending ack
             self.send_ack()
