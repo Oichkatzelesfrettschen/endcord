@@ -2736,6 +2736,8 @@ class TUI():
 
         if self.mouse_in_window(x, y, self.win_input_line):
             start, end = select_word(self.input_buffer, self.input_index)
+            if not end:
+                return
             self.input_select_start = start
             self.input_select_end = end + 1
             self.draw_input_line()
