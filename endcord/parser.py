@@ -768,6 +768,10 @@ def command_string(text):
         else:
             cmd_type = 0
 
+    # 62 - OPEN_CONFIG_DIR
+    elif text_lower.split(" ")[0] == "open_config_dir":
+        cmd_type = 62
+
 
     # 66 - 666
     elif text_lower == "666":

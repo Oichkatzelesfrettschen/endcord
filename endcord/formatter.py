@@ -84,6 +84,14 @@ def demojize_message(message):
     return message
 
 
+def discord_timestamp(unix_time, timezone=True):
+    """Generate discord timestamp from unix time"""
+    time_obj = datetime.fromtimestamp(unix_time)
+    if timezone:
+        time_obj = time_obj.astimezone()
+    return datetime.strftime(time_obj, "%Y-%m-%dT%H:%M:%S.%f%z")
+
+
 def generate_timestamp(discord_time, format_string, timezone=True):
     """Convert discord timestamp string to formatted string and optionally convert to current timezone"""
     try:
@@ -815,8 +823,9 @@ def generate_chat(messages, roles, channels, max_length, my_id, my_roles, member
     color_default = [colors[0]]
     color_blocked = [colors[2]]
     color_deleted = [colors[3]]
-    color_separator = [colors[4]]
-    color_code = colors[5]
+    color_pending = [colors[4]]
+    color_separator = [colors[5]]
+    color_code = colors[6]
     color_chat_edited = colors_formatted[4][0]
     color_mention_chat_edited = colors_formatted[12][0]
     color_chat_url = colors_formatted[5][0][0]
@@ -874,6 +883,7 @@ def generate_chat(messages, roles, channels, max_length, my_id, my_roles, member
         edited = message.get("edited")   # failsafe
         user_id = message["user_id"]
         selected_color_spoiler = color_spoiler
+        disable_formatting = False
 
         # select base color
         color_base = color_default
@@ -887,14 +897,17 @@ def generate_chat(messages, roles, channels, max_length, my_id, my_roles, member
                 mentioned = True
                 selected_color_spoiler = color_mention_spoiler
                 break
+        if "pending" in message:
+            color_base = color_pending
+            selected_color_spoiler = color_pending
+            disable_formatting = True
 
         # skip deleted
-        disable_formatting = False
         if "deleted" in message:
             if keep_deleted:
                 color_base = color_deleted
-                disable_formatting = True
                 selected_color_spoiler = color_deleted
+                disable_formatting = True
             else:
                 continue
 

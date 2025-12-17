@@ -122,6 +122,8 @@
     Locally rename currently selected folder in tree. Custom names are kept in state_profile_name.json in config dir.
 - `redraw`  
     Redraw UI if it ever gets messed up.
+- `open_config_dir`  
+    Open config directory with system file manager.
 - `show_log`  
     Show live log.
 - `game_detection_blacklist [game_name]`  

@@ -683,13 +683,15 @@ class Discord():
             file.write(response.read())
 
 
-    def send_message(self, channel_id, message_content, reply_id=None, reply_channel_id=None, reply_guild_id=None, reply_ping=True, attachments=None, stickers=None):
+    def send_message(self, channel_id, message_content, reply_id=None, reply_channel_id=None, reply_guild_id=None, reply_ping=True, attachments=None, stickers=None, nonce=None):
         """Send a message in the channel with reply with or without ping"""
+        if not nonce:
+            nonce = generate_nonce()
         message_dict = {
             "content": message_content,
             "tts": "false",
             "flags": 0,
-            "nonce": generate_nonce(),
+            "nonce": nonce,
         }
         if reply_id and reply_channel_id:
             message_dict["message_reference"] = {

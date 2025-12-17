@@ -2,6 +2,7 @@ import curses
 import importlib.util
 import logging
 import os
+import queue
 import re
 import shutil
 import signal
@@ -57,7 +58,7 @@ APP_COMMAND_AUTOCOMPLETE_DELAY = 0.3   # delay for requesting app command autoco
 MB = 1024 * 1024
 USER_UPLOAD_LIMITS = (10*MB, 50*MB, 500*MB, 50*MB)   # premium tier 0, 1, 2, 3 (none, classic, full, basic)
 GUILD_UPLOAD_LIMITS = (10*MB, 10*MB, 50*MB, 100*MB)   # premium tier 0, 1, 2, 3
-FORUM_COMMANDS = (1, 2, 7, 13, 14, 15, 17, 20, 22, 25, 27, 29, 30, 31, 32, 40, 42, 49, 50, 51, 52, 53, 55, 56, 57, 58, 61, 66, 67)
+FORUM_COMMANDS = (1, 2, 7, 13, 14, 15, 17, 20, 22, 25, 27, 29, 30, 31, 32, 40, 42, 49, 50, 51, 52, 53, 55, 56, 57, 58, 61, 62, 66, 67)
 
 match_emoji = re.compile(r"<:(.*):(\d*)>")
 match_youtube = re.compile(r"(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}")
@@ -128,6 +129,7 @@ class Endcord:
         self.limit_command_history = config["limit_command_history"]
         self.remove_prev_notif = ["remove_previous_notification"]
         self.emoji_as_text = config["emoji_as_text"]
+        self.show_pending_messages = config["show_pending_messages"]
 
         if not self.external_editor or not shutil.which(self.external_editor):
             self.external_editor = os.environ.get("EDITOR", "nano")
@@ -445,6 +447,28 @@ class Endcord:
         self.run = False
 
 
+    def message_sender(self):
+        """Thread that takes message create/edit/remove api requests from queue and executes them one-by-one"""
+        while self.run:
+            try:
+                func, args, kwargs = self.message_send_queue.get()
+                success = func(*args, **kwargs)
+                if success is None:
+                    self.gateway.set_offline()
+                    self.update_extra_line("Network error.")
+                    while self.run:   # drain remaining tasks
+                        try:
+                            self.message_send_queue.get_nowait()
+                        except queue.Empty:
+                            break
+            except Exception:
+                pass
+
+    def put_to_message_sender(self, func, *args, **kwargs):
+        """Put method to queue with its args and kwargs"""
+        self.message_send_queue.put((func, args, kwargs))
+
+
     def extra_line_remover(self):
         """Thread that removes extra line after specific time"""
         while self.run:
@@ -480,6 +504,7 @@ class Endcord:
         if not self.preloaded:
             self.messages = []
         self.session_id = None
+        self.message_send_queue = queue.Queue()
         self.chat = []
         self.chat_format = []
         self.tab_string = ""
@@ -1332,16 +1357,16 @@ class Endcord:
             # reply
             elif action == 1 and self.messages:
                 self.reset_actions()
-                msg_index = self.lines_to_msg(chat_sel)
-                if "deleted" not in self.messages[msg_index]:
-                    if self.messages[msg_index]["user_id"] == self.my_id:
+                message = self.messages[self.lines_to_msg(chat_sel)]
+                if "deleted" not in message and "pending" not in message:
+                    if message["user_id"] == self.my_id:
                         mention = None
                     else:
                         mention = self.reply_mention
                     self.replying = {
-                        "id": self.messages[msg_index]["id"],
-                        "username": self.messages[msg_index]["username"],
-                        "global_name": self.messages[msg_index]["global_name"],
+                        "id": message["id"],
+                        "username": message["username"],
+                        "global_name": message["global_name"],
                         "mention": mention,
                     }
                 self.restore_input_text = (input_text, "standard")
@@ -1350,27 +1375,25 @@ class Endcord:
             # edit
             elif action == 2 and self.messages:
                 self.restore_input_text = (input_text, "standard")
-                msg_index = self.lines_to_msg(chat_sel)
-                if self.messages[msg_index]["user_id"] == self.my_id:
-                    if "deleted" not in self.messages[msg_index]:
-                        self.reset_actions()
-                        self.editing = self.messages[msg_index]["id"]
-                        self.add_to_store(self.active_channel["channel_id"], input_text)
-                        self.restore_input_text = (emoji.demojize(self.messages[msg_index]["content"]), "edit")
-                        self.update_status_line()
+                message = self.messages[self.lines_to_msg(chat_sel)]
+                if message["user_id"] == self.my_id and "deleted" not in message and "pending" not in message:
+                    self.reset_actions()
+                    self.editing = message["id"]
+                    self.add_to_store(self.active_channel["channel_id"], input_text)
+                    self.restore_input_text = (emoji.demojize(message["content"]), "edit")
+                    self.update_status_line()
 
             # delete
             elif action == 3 and self.messages:
                 self.restore_input_text = (input_text, "standard")
-                msg_index = self.lines_to_msg(chat_sel)
-                if self.messages[msg_index]["user_id"] == self.my_id or self.active_channel["admin"]:
-                    if "deleted" not in self.messages[msg_index]:
-                        self.reset_actions()
-                        self.ignore_typing = True
-                        self.deleting = self.messages[msg_index]["id"]
-                        self.add_to_store(self.active_channel["channel_id"], input_text)
-                        self.restore_input_text = (None, "prompt")
-                        self.update_status_line()
+                message = self.messages[self.lines_to_msg(chat_sel)]
+                if (message["user_id"] == self.my_id or self.active_channel["admin"]) and "deleted" not in message and "pending" not in message:
+                    self.reset_actions()
+                    self.ignore_typing = True
+                    self.deleting = message["id"]
+                    self.add_to_store(self.active_channel["channel_id"], input_text)
+                    self.restore_input_text = (None, "prompt")
+                    self.update_status_line()
 
             # toggle mention ping
             elif action == 6:
@@ -1711,7 +1734,8 @@ class Endcord:
             elif action == 31 and self.messages:
                 self.restore_input_text = (input_text, "standard")
                 msg_index = self.lines_to_msg(chat_sel)
-                self.copy_msg_url(msg_index)
+                if "pending" not in self.messages[msg_index]:
+                    self.copy_msg_url(msg_index)
 
             # go to channel/message mentioned in this message
             elif action == 32:
@@ -1775,14 +1799,15 @@ class Endcord:
             elif action == 36 and self.messages:
                 msg_index = self.lines_to_msg(chat_sel)
                 self.add_to_store(self.active_channel["channel_id"], input_text)
-                if "deleted" not in self.messages[msg_index]:
+                message = self.messages[self.lines_to_msg(chat_sel)]
+                if "deleted" not in message and "pending" not in message:
                     self.restore_input_text = (None, "react")
                     self.ignore_typing = True
                     self.reacting = {
-                        "id": self.messages[msg_index]["id"],
+                        "id": message["id"],
                         "msg_index": msg_index,
-                        "username": self.messages[msg_index]["username"],
-                        "global_name": self.messages[msg_index]["global_name"],
+                        "username": message["username"],
+                        "global_name": message["global_name"],
                     }
                     self.update_status_line()
 
@@ -2128,25 +2153,17 @@ class Endcord:
 
                 if self.editing:
                     text_to_send = emoji.emojize(input_text, language="alias", variant="emoji_type")
-                    success = self.discord.send_update_message(
+                    self.put_to_message_sender(self.discord.send_update_message,
                         channel_id=self.active_channel["channel_id"],
                         message_id=self.editing,
                         message_content=text_to_send,
                     )
-                    if success is None:
-                        self.gateway.set_offline()
-                        self.update_extra_line("Network error.")
-                        self.restore_input_text = (input_text, "standard")
-                        continue   # to keep editing
 
                 elif self.deleting and input_text.lower() == "y":
-                    success = self.discord.send_delete_message(
+                    self.put_to_message_sender(self.discord.send_delete_message,
                         channel_id=self.active_channel["channel_id"],
                         message_id=self.deleting,
                     )
-                    if success is None:
-                        self.gateway.set_offline()
-                        self.update_extra_line("Network error.")
 
                 elif self.downloading_file["urls"]:
                     urls = self.downloading_file["urls"]
@@ -2322,7 +2339,8 @@ class Endcord:
                     text_to_send = emoji.emojize(input_text, language="alias", variant="emoji_type")
                     if self.fun and ("xyzzy" in text_to_send or "XYZZY" in text_to_send):
                         self.update_extra_line("Nothing happens.")
-                    success = self.discord.send_message(
+                    nonce = discord.generate_nonce()
+                    self.put_to_message_sender(self.discord.send_message,
                         self.active_channel["channel_id"],
                         text_to_send,
                         reply_id=self.replying["id"],
@@ -2331,11 +2349,15 @@ class Endcord:
                         reply_ping=self.replying["mention"],
                         attachments=this_attachments,
                         stickers=stickers,
+                        nonce=nonce,
                     )
-                    if success is None:
-                        self.gateway.set_offline()
-                        self.update_extra_line("Network error.")
-                        self.restore_input_text = (input_text, "standard")
+                    self.add_pending_message(
+                        text_to_send,
+                        nonce,
+                        reply_id=self.replying["id"],
+                        attachments=this_attachments,
+                        stickers=stickers,
+                    )
 
                 self.reset_actions()
 
@@ -2356,14 +2378,10 @@ class Endcord:
                     self.update_status_line()
 
                 if self.deleting:
-                    success = self.discord.send_delete_message(
+                    self.put_to_message_sender(self.discord.send_delete_message,
                         channel_id=self.active_channel["channel_id"],
                         message_id=self.deleting,
                     )
-                    if success is None:
-                        self.gateway.set_offline()
-                        self.update_extra_line("Network error.")
-                        self.restore_input_text = (input_text, "standard")
 
                 elif self.cancel_download:
                     self.downloader.cancel()
@@ -2379,7 +2397,8 @@ class Endcord:
                             this_attachments = self.ready_attachments.pop(num)["attachments"]
                             self.update_extra_line()
                             break
-                    success = self.discord.send_message(
+                    nonce = discord.generate_nonce()
+                    self.put_to_message_sender(self.discord.send_message,
                         active_channel,
                         "",
                         reply_id=self.replying["id"],
@@ -2387,11 +2406,14 @@ class Endcord:
                         reply_guild_id=self.active_channel["guild_id"],
                         reply_ping=self.replying["mention"],
                         attachments=this_attachments,
+                        nonce=nonce,
                     )
-                    if success is None:
-                        self.gateway.set_offline()
-                        self.update_extra_line("Network error.")
-                        self.restore_input_text = (input_text, "standard")
+                    self.add_pending_message(
+                        "",
+                        nonce,
+                        reply_id=self.replying["id"],
+                        attachments=this_attachments,
+                    )
 
                 elif self.search and self.extra_window_open and self.extra_indexes:
                     extra_selected = self.tui.get_extra_selected()
@@ -2700,7 +2722,8 @@ class Endcord:
 
         elif cmd_type == 18:   # LINK_MESSAGE
             msg_index = self.lines_to_msg(chat_sel)
-            self.copy_msg_url(msg_index)
+            if "pending" not in self.messages[msg_index]:
+                self.copy_msg_url(msg_index)
 
         elif cmd_type == 19:   # GOTO_MENTION
             msg_index = self.lines_to_msg(chat_sel)
@@ -2761,7 +2784,7 @@ class Endcord:
             msg_index = self.lines_to_msg(chat_sel)
             if not react_text:
                 reset = False
-                if "deleted" not in self.messages[msg_index]:
+                if "deleted" not in self.messages[msg_index] and "pending" not in self.messages[msg_index]:
                     self.restore_input_text = (None, "react")
                     self.ignore_typing = True
                     self.reacting = {
@@ -2958,13 +2981,14 @@ class Endcord:
 
         elif cmd_type == 36:   # PIN_MESSAGE
             msg_index = self.lines_to_msg(chat_sel)
-            if not self.active_channel["guild_id"] or (self.active_channel["admin"] or self.active_channel.get("allow_manage")):
-                success = self.discord.send_pin(
-                    self.active_channel["channel_id"],
-                    self.messages[msg_index]["id"],
-                )
-            else:
-                self.update_extra_line("Can't pin a message - not permitted.")
+            if "deleted" not in self.messages[msg_index] and "pending" not in self.messages[msg_index]:
+                if not self.active_channel["guild_id"] or (self.active_channel["admin"] or self.active_channel.get("allow_manage")):
+                    success = self.discord.send_pin(
+                        self.active_channel["channel_id"],
+                        self.messages[msg_index]["id"],
+                    )
+                else:
+                    self.update_extra_line("Can't pin a message - not permitted.")
 
         elif cmd_type == 37:   # PUSH_BUTTON
             msg_index = self.lines_to_msg(chat_sel)
@@ -3381,6 +3405,9 @@ class Endcord:
             else:
                 self.update_extra_line("Game detection service is disabled or not running.")
 
+        elif cmd_type == 62:   # OPEN_CINFIG_DIR
+            peripherals.native_open(os.path.expanduser(peripherals.config_path))
+
         elif cmd_type == 66 and self.fun:   # 666
             self.fun = 1 if self.fun == 2 else 2
             self.tui.set_fun(self.fun)
@@ -3692,8 +3719,84 @@ class Endcord:
         self.update_chat(keep_selected=True, scroll=False)
 
 
+    def add_pending_message(self, content, nonce, reply_id=None, attachments=None, stickers=None):
+        """Add message to chat as pending"""
+        if not self.show_pending_messages:
+            return
+        if self.get_chat_last_message_id() != self.last_message_id:
+            return
+
+        # build embeds/attachments
+        embeds = []
+        if attachments:
+            for attachment in attachments:
+                embeds.append({
+                    "type": "unknown",
+                    "name": attachment["name"],
+                    "url": attachment["path"],
+                })
+
+        # build reply
+        referenced_message = None
+        if reply_id:
+            for message in self.messages:
+                if message["id"] == reply_id:
+                    referenced_message = message
+                    break
+            else:
+                referenced_message = {
+                    "id": reply_id,
+                    "timestamp": formatter.discord_timestamp(time.time()),
+                    "content": "Unknown content",
+                    "mentions": [],
+                    "user_id": "-1000",
+                    "username": "unknown",
+                    "global_name": None,
+                    "nick": None,
+                    "embeds": [],
+                    "stickers": [],
+                }
+
+        # build stickers
+        if stickers:
+            stickers = [{"name": "sticker", "id": s, "format_type": -1} for s in stickers]
+        else:
+            stickers = []
+
+        # build message
+        if not content and not embeds and not stickers:
+            return
+        message = {
+            "pending": True,
+            "id": nonce,
+            "channel_id": self.active_channel["channel_id"],
+            "guild_id": self.active_channel["guild_id"],
+            "timestamp": formatter.discord_timestamp(time.time()),
+            "edited": False,
+            "content": content,
+            "mentions": [],
+            "mention_roles": [],
+            "mention_everyone": None,
+            "user_id": self.my_id,
+            "username": self.my_user_data["username"],
+            "global_name": self.my_user_data["global_name"],   # spacebar_fix - get
+            "nick": self.my_user_data["nick"],
+            "referenced_message": referenced_message,
+            "reactions": [],
+            "embeds": embeds,
+            "stickers": stickers,   # {name, id, format_type}
+            "interaction": None,
+        }
+
+        if self.emoji_as_text:
+            message = formatter.demojize_message(message)
+        self.messages.insert(0, message)
+        self.last_message_id = message["id"]
+        self.update_chat(change_amount=1, scroll=False)
+
+
     def substitute_in_last_message(self, input_text):
-        """Try to perform s/ substitutiion in last sent message of thi user, if the message is in current buffer"""
+        """Try to perform s/ substitutiion in last sent message of this user, if the message is in current buffer"""
         for message in self.messages:
             if message["user_id"] == self.my_id:
                 message_id = message["id"]
@@ -3705,15 +3808,11 @@ class Endcord:
             return
         new_content = formatter.substitute(content, input_text)
         if new_content and content != new_content:
-            success = self.discord.send_update_message(
+            self.put_to_message_sender(self.discord.send_update_message,
                 channel_id=self.active_channel["channel_id"],
                 message_id=message_id,
                 message_content=new_content,
             )
-            if success is None:
-                self.gateway.set_offline()
-                self.update_extra_line("Network error.")
-                self.restore_input_text = (input_text, "standard")
 
 
     def download_file(self, url, move=True, open_media=False, open_move=False):
@@ -3818,6 +3917,7 @@ class Endcord:
         at_index = len(self.ready_attachments[ch_index]["attachments"]) - 1
 
         self.add_running_task("Uploading file", 2)
+        time.sleep(0.01)   # time for tui to clear extra window before drawing extra line
         self.update_extra_line()
         upload_data, code = self.discord.request_attachment_url(self.active_channel["channel_id"], path)
         if code == 3:
@@ -5740,15 +5840,25 @@ class Endcord:
         my_message = data.get("user_id") == self.my_id
         channel_id = self.active_channel["channel_id"]
         if op == "MESSAGE_CREATE":
+            change_amount = 1
+            if my_message:
+                nonce = data.pop("nonce", None)
             if self.emoji_as_text:
                 data = formatter.demojize_message(data)
-            # if latest message is loaded - not viewing old message chunks
-            if self.get_chat_last_message_id() == self.last_message_id:
+            if self.get_chat_last_message_id() == self.last_message_id:   # only if viewing latest chat chunk
                 self.messages.insert(0, data)
             self.last_message_id = data["id"]
+            # remove pending message
+            if my_message and self.show_pending_messages:
+                for num, message in enumerate(self.messages):
+                    if "pending" in message and message["id"] == nonce:
+                        self.messages.pop(num)
+                        change_amount -=1
+                        break
             # limit chat size
             if len(self.messages) > self.limit_chat_buffer:
                 self.messages.pop(-1)
+            # set unreads sign in status line
             update_status_line = False
             if bool(self.tui.get_chat_selected()[1]):
                 if not self.new_unreads:
@@ -5761,15 +5871,17 @@ class Endcord:
                     update_status_line = True
                     break
             if my_message:
+                # handle slowmode
                 if self.slowmodes and self.slowmodes.get(channel_id):
                     if not self.slowmode_times.get(channel_id):
                         self.slowmode_times[channel_id] = self.slowmodes.get(channel_id, 0)
                     if not self.slowmode_thread or not self.slowmode_thread.is_alive():
                         self.slowmode_thread = threading.Thread(target=self.wait_slowmode, daemon=True, args=())
                         self.slowmode_thread.start()
+                # remove unreads line
                 if self.read_state.get(channel_id):
                     self.read_state[channel_id]["last_acked_unreads_line"] = None
-            self.update_chat(change_amount=1, scroll=False)
+            self.update_chat(change_amount=change_amount, scroll=False)
             if update_status_line:
                 self.update_status_line()
         else:
@@ -5838,6 +5950,11 @@ class Endcord:
         if op == "MESSAGE_CREATE":
             if self.emoji_as_text:
                 data = formatter.demojize_message(data)
+            if data.get("user_id") == self.my_id and self.show_pending_messages:
+                for num, message in enumerate(self.messages):
+                    if "pending" in message and message["id"] == new_message.pop("nonce", None):
+                        self.messages.pop(num)
+                        break
             self.channel_cache[ch_num][1].insert(0, data)
             if len(self.channel_cache[ch_num][1]) > self.msg_num:
                 self.channel_cache[ch_num][1].pop(-1)
@@ -6671,9 +6788,9 @@ class Endcord:
             activities=self.my_activities,
         )
 
-        # start input thread
-        self.wait_input_thread = threading.Thread(target=self.wait_input, daemon=True, args=())
-        self.wait_input_thread.start()
+        # start input and sender threads
+        threading.Thread(target=self.wait_input, daemon=True, args=()).start()
+        threading.Thread(target=self.message_sender, daemon=True).start()
 
         # start RPC server
         if self.enable_rpc:

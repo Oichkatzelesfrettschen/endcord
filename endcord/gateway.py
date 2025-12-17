@@ -1010,6 +1010,10 @@ class Gateway():
                         "channel_id": message["channel_id"],
                         "guild_id": message.get("guild_id"),
                     })
+                    if message_done["user_id"] == self.my_id:
+                        message_done.update({
+                            "nonce": message.get("nonce"),
+                        })
                     self.messages_buffer.append({
                         "op": "MESSAGE_CREATE",
                         "d": message_done,

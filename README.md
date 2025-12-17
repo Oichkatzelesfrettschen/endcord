@@ -89,6 +89,7 @@ Settings, logs, state and themes location:
 - On Linux: `~/.config/endcord/` or `$XDG_DATA_HOME/endcord/`  
 - On Windows: `%USERPROFILE%/AppData/Local/endcord/`  
 - On macOS: `~/Library/Application Support/endcord/`  
+- Or run `open_config_dir` command inside endcord.
 
 Run `endcord -h` or `endcord --help` to see available command arguments.  
 

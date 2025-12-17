@@ -44,6 +44,8 @@ Note: always put string in `""`. To use `"` inside the string escape it like thi
     Ping someone by default when replying.
 - `cache_typed = True`  
     Save unsent message when switching channel, and load it when re-opening that channel.
+- `show_pending_messages = True`  
+    Show pending messages in chat with `color_chat_pending` until they are sent. Disable to save some CPU usage when sending messages.  
 - `assist = True`  
   Assist when typing @username, @role, #channel, :emoji:, ::sticker::
 - `cursor_on_time = 0.7`  
@@ -58,7 +60,7 @@ Note: always put string in `""`. To use `"` inside the string escape it like thi
 - `hide_spam = True`  
     Whether to hide or show spam DM request channels in DM list.
 - `keep_deleted = False`  
-    Whether to keep deleted messages in chat, with different color, or remove them.
+    Whether to keep deleted messages in the chat, with different color, or remove them.
 - `limit_cache_deleted = 30`  
     Limit number of cached deleted messages per channel.
 - `tree_show_folders = True`  
@@ -280,10 +282,12 @@ Every next list has additional `start` and `end`- indexes on a line where color 
     Color for blocked messages if `block_mode = 1`.
 - `color_chat_deleted = [95, -1]`  
     Color for deleted messages when `keep_deleted = True`.
+- `color_chat_pending = [242, -1]`  
+    Color for pending messages in the chat.
 - `color_chat_selected = [233, 255]`  
-    Color for selected line in chat.
+    Color for selected line in the chat.
 - `color_chat_separator = [242, -1, "i"]`  
-    Color for date separator line in chat.
+    Color for date separator line in the chat.
 - `color_status_line = [233, 255]`  
     Color for status line.
 - `color_extra_line = [233, 245]`  
