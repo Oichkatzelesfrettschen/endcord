@@ -2407,7 +2407,6 @@ def generate_tree(dms, guilds, threads, unseen, mentioned, guild_folders, activi
             guilds_sorted.append(guild)
 
     # generator loop
-    have_uncollapsed_folder = False
     in_folder = None
     for guild in guilds_sorted:
         # handle folders
@@ -2415,12 +2414,7 @@ def generate_tree(dms, guilds, threads, unseen, mentioned, guild_folders, activi
             if "name" in guild:
                 in_folder = guild["id"]
                 tree.append(f"{dd_folder} {guild["name"]}")
-                if not have_uncollapsed_folder and guild["id"] not in collapsed:
-                    code = 1
-                    have_uncollapsed_folder = True
-                else:
-                    code = 0
-                tree_format.append(code)
+                tree_format.append(int(guild["id"] not in collapsed))
                 tree_metadata.append({
                     "id": guild["id"],
                     "type": -2,
@@ -2570,9 +2564,9 @@ def generate_tree(dms, guilds, threads, unseen, mentioned, guild_folders, activi
             for num, folder in enumerate(tree_metadata):
                 if folder and folder["id"] == in_folder:
                     if ping_guild and not muted_guild and (not tree_format[num] or tree_format[num] == 30):
-                        tree_format[num] = 20
+                        tree_format[num] = 20 + (tree_format[num] % 10)
                     elif unseen_guild and not muted_guild:
-                        tree_format[num] = 30
+                        tree_format[num] = 30 + (tree_format[num] % 10)
                     break
 
         # add categories to the tree
