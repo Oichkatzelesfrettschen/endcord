@@ -351,6 +351,45 @@ class Gateway():
                                         break
 
 
+    def process_one_channel_overrides(self, channel_overrides, guild_num, server_message_notifications):
+        """Process channel_overrides for one guild"""
+
+        # first pass to get values and process message_notifications for categories
+        for channel in channel_overrides:
+            for channel_num, channel_g in enumerate(self.guilds[guild_num]["channels"]):
+                if channel_g["id"] == channel["channel_id"]:
+                    break
+            else:
+                continue
+            if channel_g["type"] in (0, 2, 4, 5, 15):
+                flags = int(channel.get("flags", 0))
+                hidden = not perms.decode_flag(flags, 12)   # manually hidden
+            else:
+                hidden = False
+            self.guilds[guild_num]["channels"][channel_num].update({
+                "message_notifications": channel["message_notifications"],
+                "muted": channel["muted"],
+                "hidden": hidden,
+                "collapsed": channel.get("collapsed", False),   # spacebar_fix - get
+            })
+
+        # second pass to process message_notifications for categories
+        for channel in self.guilds[guild_num]["channels"]:
+            if channel["type"] == 4 and ("message_notifications" not in channel or channel["message_notifications"] == 3):    # category with server defaults notifications
+                channel["message_notifications"] = 10 + server_message_notifications
+
+        # third pass to process message_notifications for channels
+        for channel in self.guilds[guild_num]["channels"]:
+            if channel["type"] != 4 and ("message_notifications" not in channel or channel["message_notifications"] == 3):   # channel with category defaults notifications
+                category_id = channel["parent_id"]
+                for category in self.guilds[guild_num]["channels"]:
+                    if category["id"] == category_id:
+                        category_message_notifications = category["message_notifications"]
+                else:
+                    category_message_notifications = 2   # nothing
+                channel["message_notifications"] = 10 + category_message_notifications
+
+
     def add_guild(self, guild):
         """Process received guild object and add guild to the guilds channels, roles, threads, emojis and stickers lists"""
         if guild.get("unavailable"):
@@ -423,6 +462,7 @@ class Gateway():
             "base_permissions": base_permissions,
             "community": community,
             "premium": properties["premium_tier"],
+            "opt_in_channels": True,   # will be overwritten later if opted-out
         })
 
         # threads
@@ -758,24 +798,7 @@ class Gateway():
                             # opt_in_channels means: show all guild channels - when guild is joined
                             opt_in_channels = not perms.decode_flag(guild_flags, 14) or perms.decode_flag(guild_flags, 13)
                             self.guilds[guild_num]["opt_in_channels"] = opt_in_channels
-                            for channel in guild["channel_overrides"]:
-                                found = False
-                                for channel_num, channel_g in enumerate(self.guilds[guild_num]["channels"]):
-                                    if channel_g["id"] == channel["channel_id"]:
-                                        found = True
-                                        break
-                                if found:
-                                    if channel_g["type"] in (0, 2, 4, 5, 15):
-                                        flags = int(channel.get("flags", 0))
-                                        hidden = not perms.decode_flag(flags, 12)   # manually hidden
-                                    else:
-                                        hidden = False
-                                    self.guilds[guild_num]["channels"][channel_num].update({
-                                        "message_notifications": channel["message_notifications"],
-                                        "muted": channel["muted"],
-                                        "hidden": hidden,
-                                        "collapsed": channel.get("collapsed", False),   # spacebar_fix - get
-                                    })
+                            self.process_one_channel_overrides(guild["channel_overrides"], guild_num, guild["message_notifications"])
                         else:
                             for dm in guild["channel_overrides"]:
                                 for dm_num, dm_g in enumerate(self.dms):
@@ -1325,19 +1348,7 @@ class Gateway():
                                 hidden = False
                             self.guilds[guild_num]["channels"][channel_num]["hidden"] = hidden
                             self.guilds[guild_num]["channels"][channel_num]["muted"] = False
-                        for channel in data["channel_overrides"]:
-                            for channel_num, channel_g in enumerate(self.guilds[guild_num]["channels"]):
-                                if channel_g["id"] == channel["channel_id"]:
-                                    break
-                            else:
-                                continue
-                            flags = int(channel.get("flags", 0))
-                            hidden = not perms.decode_flag(flags, 12)
-                            self.guilds[guild_num]["channels"][channel_num].update({
-                                "message_notifications": channel["message_notifications"],
-                                "muted": channel["muted"],
-                                "hidden": hidden,
-                            })
+                        self.process_one_channel_overrides(data["channel_overrides"], guild_num, data["message_notifications"])
                         self.process_hidden_channels()
                     else:   # dm
                         for dm_g in self.dms:
@@ -2049,7 +2060,6 @@ class Gateway():
         0 - all messages
         1 - only mentions
         2 - nothing
-        3 - category defaults
         """
         if self.guilds_changed:
             self.guilds_changed = False

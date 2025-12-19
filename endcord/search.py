@@ -309,9 +309,9 @@ def search_string_selects(message, query_in, limit=50, score_cutoff=15):
     return sorted(results, key=lambda x: x[2], reverse=True)
 
 
-def search_set_notifications(guilds, dms, guild_id, channel_id, ping_options, query_in):
+def search_set_notifications(guilds, dms, guild_id, channel_id, ping_options, query_in, score_cutoff=15):
     """Search for notification settings"""
-    results = []
+    options = []
     query = query_in.lower()
     query_words = query.split(" ")
 
@@ -325,33 +325,50 @@ def search_set_notifications(guilds, dms, guild_id, channel_id, ping_options, qu
                 break
         if channel:
             message_notifications = channel.get("message_notifications", 0)
-            for num, option in enumerate(ping_options):
-                if num == message_notifications:
-                    results.append((f"* {option}", f"{" ".join(query_words[:2])}{option}"))
+            if channel["type"] == 4:
+                default_val = guild["message_notifications"]
+            else:
+                for category in guild["channels"]:
+                    if category["type"] == 4 and category["id"] == channel["parent_id"]:
+                        default_val = category["message_notifications"]
+                        default_val = default_val - 10 if default_val >= 10 else default_val
+                        break
                 else:
-                    results.append((option, f"{" ".join(query_words[:2])}{option}"))
+                    default_val = 2
+            default = "default" + f"({"server" if channel["type"] == 4 else "category"}: {ping_options[default_val]})"
+            message_notifications = 3 if message_notifications > 10 else message_notifications
+            for num, option in enumerate(ping_options + [default]):
+                if num == message_notifications:
+                    options.append((f"* {option}", query_words[0] + " " + option.split(" ")[0]))
+                else:
+                    options.append((option, query_words[0] + " " + option.split(" ")[0]))
     else:
         for dm in dms:
             if dm["id"] == channel_id:
-                results.append(("No notification settings for DM", None))
+                options.append(("No notification settings for DM", None))
         else:   # guild
+            guild = None
             for guild in guilds:
                 if guild["guild_id"] == channel_id:
                     break
-            else:
-                guild = None
-                results.append(("Server/channel not found", None))
             if guild:
                 message_notifications = guild.get("message_notifications", 0)
                 for num, option in enumerate(ping_options):
                     if num == message_notifications:
-                        results.append((f"* {option}", f"{" ".join(query_words[:2])}{option}"))
+                        options.append((f"* {option}", f"{" ".join(query_words[:2])}{option}"))
                     else:
-                        results.append((option, f"{" ".join(query_words[:2])}{option}"))
-                results.append((f"suppress_everyone = {guild.get("suppress_everyone", False)}", f"{" ".join(query_words[:2])}suppress_everyone"))
-                results.append((f"suppress_roles = {guild.get("suppress_roles", False)}", f"{" ".join(query_words[:2])}suppress_roles"))
+                        options.append((option, f"{" ".join(query_words[:2])}{option}"))
+                options.append((f"suppress_everyone = {guild.get("suppress_everyone", False)}", f"{" ".join(query_words[:2])}suppress_everyone"))
+                options.append((f"suppress_roles = {guild.get("suppress_roles", False)}", f"{" ".join(query_words[:2])}suppress_roles"))
 
-    return results
+    results = []
+    for option in options:
+        score = fuzzy_match_score(query_words[1], option[0].replace("*", " ").strip())
+        if query_words[1] and score < score_cutoff:
+            continue
+        results.append((option[0], option[1], score))
+
+    return sorted(results, key=lambda x: x[2], reverse=True)
 
 
 def search_client_commands(commands, query, limit=50, score_cutoff=15):

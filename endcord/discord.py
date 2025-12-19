@@ -29,7 +29,7 @@ DISCORD_CDN_HOST = "cdn.discordapp.com"
 DISCORD_EPOCH = 1420070400
 SEARCH_PARAMS = ("content", "channel_id", "author_id", "mentions", "has", "max_id", "min_id", "pinned", "offset")
 SEARCH_HAS_OPTS = ("link", "embed", "poll", "file", "video", "image", "sound", "sticker", "forward")
-PING_OPTIONS = ("all", "mention", "nothing")
+PING_OPTIONS = ["all", "mentions", "nothing"]   # must be list
 SUPPRESS_OPTIONS = ("suppress_everyone", "suppress_roles")
 logger = logging.getLogger(__name__)
 
@@ -1095,41 +1095,42 @@ class Discord():
         """Send notification settings for channel or category"""
         channel_id = str(channel_id)
         guild_id = str(guild_id)
-        value = None
-        for i, ping_option in enumerate(PING_OPTIONS):
-            if setting == ping_option:
-                value = i
-                break
+        try:
+            value = min(int(setting), 3)
+        except ValueError:
+            value = 3   # category/guild default
+            for i, ping_option in enumerate(PING_OPTIONS):
+                if setting == ping_option:
+                    value = i
+                    break
 
-        if value is not None:
-            channel_overrides = {
-                channel_id: {
-                    "message_notifications": value,
+        channel_overrides = {
+            channel_id: {
+                "message_notifications": value,
+            },
+        }
+        message_dict = {
+            "guilds": {
+                guild_id: {
+                    "channel_overrides": channel_overrides,
                 },
-            }
-            message_dict = {
-                "guilds": {
-                    guild_id: {
-                        "channel_overrides": channel_overrides,
-                    },
-                },
-            }
+            },
+        }
 
-            url = "/api/v9/users/@me/guilds/settings"
-            message_data = json.dumps(message_dict)
-            try:
-                connection = self.get_connection(self.host, 443)
-                connection.request("PATCH", url, message_data, self.header)
-                response = connection.getresponse()
-            except (socket.gaierror, TimeoutError):
-                connection.close()
-                return None
-            if response.status == 200:
-                connection.close()
-                return True
-            logger.error(f"Failed to set guild mute config. Response code: {response.status}")
+        url = "/api/v9/users/@me/guilds/settings"
+        message_data = json.dumps(message_dict)
+        try:
+            connection = self.get_connection(self.host, 443)
+            connection.request("PATCH", url, message_data, self.header)
+            response = connection.getresponse()
+        except (socket.gaierror, TimeoutError):
             connection.close()
-        return False
+            return None
+        if response.status == 200:
+            connection.close()
+            return True
+        logger.error(f"Failed to set guild mute config. Response code: {response.status}")
+        connection.close()
 
 
     def get_threads(self, channel_id, number=25, offset=0, archived=True):

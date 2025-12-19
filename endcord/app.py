@@ -3100,7 +3100,7 @@ class Endcord:
                 if cmd_args["setting"].startswith("suppress"):
                     self.update_extra_line("Cant set that option for channel.")
                 else:
-                    success = self.discord.send_notification_setting_channel(cmd_args["setting"], channel_id, guild_id)
+                    self.discord.send_notification_setting_channel(cmd_args["setting"], channel_id, guild_id)
             else:
                 for dm in self.dms:
                     if dm["id"] == channel_id:
@@ -3119,7 +3119,7 @@ class Endcord:
                             value = not guild.get("suppress_roles")
                         else:
                             value = None
-                        success = self.discord.send_notification_setting_guild(cmd_args["setting"], channel_id, value)
+                        self.discord.send_notification_setting_guild(cmd_args["setting"], channel_id, value)
                     else:
                         self.update_extra_line("Guild not found.")
 
@@ -4757,14 +4757,16 @@ class Endcord:
                 if assist_word.endswith(" ") and not all(not x for x in query_words[1:]):
                     guild_id = None   # skip all
                     channel_id = None
-                self.assist_found = search.search_set_notifications(
-                    self.guilds,
-                    self.dms,
-                    guild_id,
-                    channel_id,
-                    discord.PING_OPTIONS,
-                    assist_word,
-                )
+                else:
+                    self.assist_found = search.search_set_notifications(
+                        self.guilds,
+                        self.dms,
+                        guild_id,
+                        channel_id,
+                        discord.PING_OPTIONS,
+                        assist_word,
+                        score_cutoff=self.assist_score_cutoff,
+                    )
 
             elif assist_word.lower().startswith("game_detection_blacklist ") and self.enable_game_detection and self.game_detection.run:
                 self.assist_found = search.search_games(
