@@ -26,17 +26,25 @@ match_channel = re.compile(r"<#(\d*?)>")
 match_timestamp = re.compile(r"<t:(\d+)(:[tTdDfFR])?>")
 match_channel_id = re.compile(r"(?<=<#)\d*?(?=>)")
 match_escaped_md = re.compile(r"\\(?=[^a-zA-Z\d\s])")
-match_md_underline = re.compile(r"(?<!\\)((?<=_))?__[^_]+__")
-match_md_bold = re.compile(r"(?<!\\)((?<=\*))?\*\*[^\*]+\*\*")
-match_md_strikethrough = re.compile(r"(?<!\\)((?<=~))?~~[^~]+~~")   # unused
 match_md_spoiler = re.compile(r"(?<!\\)((?<=\|))?\|\|[^_]+?\|\|")
 match_md_code_snippet = re.compile(r"(?<!`|\\)`[^`]+`")
 match_md_code_block = re.compile(r"(?s)```.*?```")
-match_md_italic = re.compile(r"\b(?<!\\)(?<!\\_)(((?<=_))?_[^_]+_)\b|(((?<=\*))?\*[^\*]+\*)")
 match_url = re.compile(r"https?:\/\/\w+(\.\w+)+[^\s)\]>]*")
 match_discord_channel_url = re.compile(r"https:\/\/discord(?:app)?\.com\/channels\/(\d*)\/(\d*)(?:\/(\d*))?")
 match_discord_channel_combined = re.compile(r"<#(\d*?)>|https:\/\/discord(?:app)?\.com\/channels\/(\d*)\/(\d*)(?:\/(\d*))?")
 match_sticker_id = re.compile(r"<;\d*?;>")
+match_md_all = re.compile(
+    r"""
+    (?<!\\)(
+        (__[^_]+__)      |   # underline
+        (\*\*[^\*]+\*\*) |   # bold
+        # (~~[^~]+~~)    |   # strikethrough - unused
+        (_[^_]+_)        |   # italic _
+        (\*[^\*]+\*)         # italic *
+    )
+    """,
+    re.VERBOSE,
+)
 
 
 def lazy_replace(text, key, value_function):
@@ -468,21 +476,20 @@ def format_md_all(line, content_start, except_ranges):
     indexes = []
     for _ in range(10):   # lets have some limits
         line_content = line[content_start:]
-        format_len = 2
-        string_match = re.search(match_md_underline, line_content)
+        string_match = re.search(match_md_all, line_content)
         if not string_match:
-            string_match = re.search(match_md_bold, line_content)
-            if not string_match:
-                string_match = re.search(match_md_italic, line_content)
-                # curses.color() must be initialized
-                attribute = curses.A_ITALIC
-                format_len = 1
-                if not string_match:
-                    break
-            else:
-                attribute = curses.A_BOLD
-        else:
+            break
+
+        if string_match.group(2):   # underline
             attribute = curses.A_UNDERLINE
+            format_len = 2
+        elif string_match.group(3):   # bold
+            attribute = curses.A_BOLD
+            format_len = 2
+        else:   # italic
+            attribute = curses.A_ITALIC
+            format_len = 1
+
         start = string_match.start() + content_start
         end = string_match.end() + content_start
         skip = False
@@ -498,10 +505,12 @@ def format_md_all(line, content_start, except_ranges):
         text = string_match.group(0)[format_len:-format_len]
         line = line[:start] + text + line[end:]
         true_end = end - 2 * format_len
+
         # keep indexes of changes
         indexes.extend((start, true_end))
         if format_len == 2:
             indexes.extend((start+1, end - 3))
+
         # rearrange formats at indexes after this format index
         done = False
         for format_part in line_format:
@@ -515,13 +524,14 @@ def format_md_all(line, content_start, except_ranges):
                 format_part[0] |= attribute
                 done = True
             # add to format inside
-            elif (format_part[1] >= start or format_part[2] <= true_end) and format_part[0] != attribute:
+            elif (format_part[1] >= start and format_part[2] <= true_end) and format_part[0] != attribute:
                 format_part[0] |= attribute
             # inherit from format around
-            elif (format_part[1] < start or format_part[2] > true_end) and format_part[0] != attribute:
+            elif (format_part[1] < start and format_part[2] > true_end) and format_part[0] != attribute:
                 attribute |= format_part[0]
         if not done:
             line_format.append([attribute, start, end - 2 * format_len])
+
     # sort by format start so tui can draw nested format on top of previous one
     line_format = sorted(line_format, key=lambda x: x[1], reverse=True)
     return line, line_format, indexes
@@ -1315,7 +1325,7 @@ def generate_chat(messages, roles, channels, max_length, my_id, my_roles, member
             else:
                 next_line = None
 
-            if newline_sign and next_line.startswith("> "):
+            if next_line and newline_sign and next_line.startswith("> "):
                 next_line = next_line[2:]
                 quote_nl = True
                 quote = True

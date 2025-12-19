@@ -3349,7 +3349,7 @@ class Endcord:
                     })
                 for num, folder in enumerate(self.state["folder_names"]):
                     if folder["id"] not in guild_folders_ids:
-                        self.state.pop(num)
+                        self.state["folder_names"].pop(num)
                 peripherals.save_json(self.state, f"state_{self.profiles["selected"]}.json")
                 self.update_tree()
 
