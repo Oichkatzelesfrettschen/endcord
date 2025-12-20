@@ -6037,7 +6037,7 @@ class Endcord:
                                 if channel.get("muted") or channel.get("hidden"):
                                     muted = True
                                 else:
-                                    message_notifications = channel.get("message_notifications")
+                                    message_notifications = channel.get("message_notifications", 2)
                                     if message_notifications >= 10:
                                         message_notifications -= 10
                                 break

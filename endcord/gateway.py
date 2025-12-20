@@ -388,7 +388,6 @@ class Gateway():
                         break
                 else:
                     category_message_notifications = guild_message_notifications
-                    logger.info(f"NOT FOUND {channel["id"]}, PARENT {category_id}")
                 channel["message_notifications"] = 10 + category_message_notifications
 
 
