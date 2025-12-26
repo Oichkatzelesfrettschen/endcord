@@ -584,6 +584,10 @@ def complete_path(path, separator=True):
 def play_audio(path):
     """Play audio file with simpleaudio or with pw-cat on pipewire"""
     path = os.path.expanduser(path)
+    if not os.path.exists(path):
+        logger.warn(f"Audio file not found at path: {path}")
+        return
+
     if sys.platform == "linux":
         if have_pipewire:
             try:
@@ -620,6 +624,8 @@ def play_audio(path):
         data, samplerate = soundfile.read(path, dtype="float32")
     except Exception as e:
         logger.error(f"Error loading sound file: {e}")
+    if not data:
+        return
     soundcard = import_soundcard()
     if soundcard:
         speaker = soundcard.default_speaker()

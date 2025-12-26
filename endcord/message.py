@@ -36,10 +36,14 @@ def prepare_embeds(embeds, message_content):
         skip_main_url = False
         media = []
         embed_type = embed.get("type", "unknown")
+
         if "tenor.com/" not in embed.get("url", ""):
             content += get_newlined_value(embed, "url")
             main_url = embed.get("url")
             skip_main_url = True
+
+        if "author" in embed:
+            content += get_newlined_value(embed["author"], "name")
         content += get_newlined_value(embed, "title")
         content += get_newlined_value(embed, "description")
 
@@ -77,6 +81,7 @@ def prepare_embeds(embeds, message_content):
             if embed_type == "rich":
                 ready_data["media"] = media
             ready_embeds.append(ready_data)
+
     return ready_embeds
 
 

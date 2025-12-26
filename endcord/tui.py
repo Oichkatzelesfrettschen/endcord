@@ -630,7 +630,7 @@ class TUI():
             self.hibernate_cursor = 10
         else:
             self.screen.clear()
-            self.resize(redraw_only=True)
+            self.resize()
 
 
     def is_window_open(self):
@@ -836,6 +836,9 @@ class TUI():
             h, w = self.screen.getmaxyx()
             flakes = []
             while self.run and self.fun == 3:
+                if self.disable_drawing:
+                    time.sleep(0.5)
+                    continue
                 self.resize(redraw_only=True)
                 with self.lock:
                     h, w = self.screen.getmaxyx()
