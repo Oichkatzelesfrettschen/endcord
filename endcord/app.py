@@ -1465,7 +1465,7 @@ class Endcord:
                 else:
                     self.restore_input_text = (input_text, "standard")
 
-            # play media attachment
+            # view media
             elif action == 17:
                 msg_index = self.lines_to_msg(chat_sel)
                 embeds = self.get_msg_embeds(msg_index)
@@ -3688,18 +3688,25 @@ class Endcord:
     def get_msg_embeds(self, msg_index, media_only=True, stickers=True):
         """Get all palyable media embeds and stickers from message in chat"""
         urls = []
+        logger.info(self.messages[msg_index]["embeds"])
         for embed in self.messages[msg_index]["embeds"]:
             media_type = embed["type"].split("/")[0]
             if embed["url"] and (not media_only or media_type in MEDIA_EMBEDS):
-                if embed.get("main_url"):
+                if media_type == "rich":
+                    for num, match in enumerate(re.finditer(formatter.match_url, embed["url"])):
+                        if "media" in embed and len(embed["media"]) >= num and embed["media"][num]:
+                            urls.append(match.group())
+                elif embed.get("main_url"):
                     urls.append(embed["main_url"])
                 else:
                     urls.append(embed["url"])
+
         if stickers:
             for sticker in self.messages[msg_index]["stickers"]:
                 sticker_url = discord.get_sticker_url(sticker)
                 if sticker_url:
                     urls.append(sticker_url)
+        logger.info(urls)
         return urls
 
 
@@ -6062,7 +6069,7 @@ class Endcord:
                     is_dm = False
                 if not muted:
                     ping = False
-                    
+
                     if message_notifications != 2:
                         # check if this message should ping
                         mentions = data["mentions"]
@@ -6844,8 +6851,8 @@ class Endcord:
                 last_run = (last_run.month, last_run.day)
             else:
                 last_run = (6, 1)
-            if self.fun == 3 and (1, 8) < last_run < (12, 25):
-                self.update_extra_line("Christmas easter egg can be CPU-heavy. Run 'toggle_snow' command to stop it.", timed=False)
+            if self.fun == 3:
+                self.update_extra_line("Snow easter egg can be CPU-heavy. Run 'toggle_snow' command to stop it.", timed=False)
             if self.fun == 4 and last_run != (4, 1):
                 self.update_extra_line("Personalized ADs will be shown here. Click this to opt-out.", timed=False)
 

@@ -5,6 +5,7 @@ PLATFORM_TYPES = ("Desktop", "Xbox", "Playstation", "IOS", "Android", "Nitendo",
 CONTENT_TYPES = ("Played Game", "Watched Media", "Top Game", "Listened Media", "Listened Session", "Top Artist", "Custom Status", "Launched Activity", "Leaderboard")
 DISCORDAPP_CDN_ATTACHMENTS = "https://cdn.discordapp.com/attachments/"
 match_discord_attachment_url = re.compile(r"https:\/\/cdn\.discord(?:app)?\.com\/attachments\/\d+\/\d+\/([^\?\s)\]>]+)(?:\?.+)?")
+match_url = re.compile(r"https?:\/\/\w+(\.\w+)+[^\s)\]>]*")
 
 
 def get_newlined_value(embed, name):
@@ -33,6 +34,7 @@ def prepare_embeds(embeds, message_content):
         content = ""
         main_url = None
         skip_main_url = False
+        media = []
         embed_type = embed.get("type", "unknown")
         if "tenor.com/" not in embed.get("url", ""):
             content += get_newlined_value(embed, "url")
@@ -40,26 +42,41 @@ def prepare_embeds(embeds, message_content):
             skip_main_url = True
         content += get_newlined_value(embed, "title")
         content += get_newlined_value(embed, "description")
+
+        # check for all urls in content so far and set to media = false
+        for match in re.finditer(match_url, content):
+            media.append(False)
+
         if "fields" in embed:
             for field in embed["fields"]:
                 content += "\n" + field["name"] + "\n" + field["value"]  + "\n"
+                for match in re.finditer(match_url, field["name"] + "\n" + field["value"]):
+                    media.append(False)
         if "image" in embed and "url" in embed["image"]:
             content += embed["image"]["url"] + "\n"
             main_url = embed["image"]["url"]
+            media.append(True)
         if "video" in embed and "url" in embed["video"]:
             content += embed["video"]["url"] + "\n"
             if not skip_main_url:
                 main_url = embed["video"]["url"]
+            media.append(True)
         if "footer" in embed:
             content += get_newlined_value(embed["footer"], "text")
+            for match in re.finditer(match_url, embed["footer"].get("text")):
+                media.append(False)
+
         content = content.strip("\n")
         if content and (content not in message_content or DISCORDAPP_CDN_ATTACHMENTS in content):
-            ready_embeds.append({
+            ready_data = {
                 "type": embed_type,   # spacebar_fix - get
                 "name": None,
                 "url": content,
                 "main_url": main_url,
-            })
+            }
+            if embed_type == "rich":
+                ready_data["media"] = media
+            ready_embeds.append(ready_data)
     return ready_embeds
 
 

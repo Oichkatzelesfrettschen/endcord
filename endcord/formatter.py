@@ -496,8 +496,8 @@ def format_md_all(line, content_start, except_ranges):
         for except_range in except_ranges:
             start_r = except_range[0]
             end_r = except_range[1]
-            # if this match is entirely inside excepted range
-            if start > start_r and start < end_r and end > start_r and end < end_r:
+            # if this match is inside excepted range
+            if (start > start_r and start < end_r) or (end > start_r and end < end_r):
                 skip = True
                 break
         if skip:

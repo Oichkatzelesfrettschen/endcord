@@ -2254,7 +2254,7 @@ class TUI():
                         num = int(key[-2:])
                         if 49 <= num <= 57 and modifier == self.switch_tab_modifier:
                             self.pressed_num_key = num - 48
-                            return 42
+                            return self.return_input_code(42)
                     except ValueError:
                         pass
                 else:   # unicode letters
