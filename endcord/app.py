@@ -4441,6 +4441,7 @@ class Endcord:
 
     def view_log(self):
         """Show live log in chat area"""
+        time.sleep(0.05)   # time to finish self.update_chat in main loop when resize
         self.messages = []
         log = log_queue.read_log_file(os.path.expanduser(f"{peripherals.log_path}{peripherals.APP_NAME}.log"))
         self.chat, self.chat_format, self.chat_indexes, self.chat_map = formatter.generate_log(
@@ -6168,33 +6169,38 @@ class Endcord:
                     break
             else:
                 num = None
-            if num is not None:
-                self.all_roles = color.convert_role_colors(self.all_roles, guild_id, role_id, default=self.config["color_default"][0])
-                # 255_curses_bug - update only portion of roles color ids
-                self.all_roles = self.tui.init_role_colors(
-                    self.all_roles,
-                    self.default_msg_color[1],
-                    self.default_msg_alt_color[1],
-                    guild_id=guild_id,
-                )
-                for roles in self.all_roles:
-                    if roles["guild_id"] == guild_id:
-                        self.current_roles = roles["roles"]
-                        break
-                for guild in self.member_roles:
-                    if guild["guild_id"] == guild_id:
-                        for member in guild["members"]:
-                            member.pop("primary_role_color", None)
-                        break
-                self.select_current_member_roles()
+            if num is None:
+                return
 
-                # update perms and redraw
-                if role_id in roles["roles"]:
-                    self.clean_permissions(guild_id)
-                    self.compute_permissions()
-                    self.update_tree()
-                if guild_id == self.active_channel["guild_id"]:
-                    self.update_chat(scroll=False)
+            self.all_roles = color.convert_role_colors(self.all_roles, guild_id, role_id, default=self.config["color_default"][0])
+
+            if guild_id != self.active_channel["guild_id"]:
+                return
+
+            # 255_curses_bug - update only portion of roles color ids
+            self.all_roles = self.tui.init_role_colors(
+                self.all_roles,
+                self.default_msg_color[1],
+                self.default_msg_alt_color[1],
+                guild_id=guild_id,
+            )
+            for roles in self.all_roles:
+                if roles["guild_id"] == guild_id:
+                    self.current_roles = roles["roles"]
+                    break
+            for guild in self.member_roles:
+                if guild["guild_id"] == guild_id:
+                    for member in guild["members"]:
+                        member.pop("primary_role_color", None)
+                    break
+            self.select_current_member_roles()
+
+            # update perms and redraw
+            if role_id in roles["roles"]:
+                self.clean_permissions(guild_id)
+                self.compute_permissions()
+                self.update_tree()
+            self.update_chat(scroll=False)
 
 
     def process_call_gateway_events(self, event):
