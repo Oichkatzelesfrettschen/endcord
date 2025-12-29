@@ -1888,8 +1888,6 @@ class TUI():
         """Spellcheck words visible on screen"""
         if not self.input_buffer or self.enable_autocomplete or self.bracket_paste:
             return
-        import traceback
-        logger.info("".join(traceback.format_stack()))
         w = self.input_hw[1]
         line_start = max(0, len(self.input_buffer) - w + 1 - self.input_line_index)
         # first space before line_start in self.input_buffer
