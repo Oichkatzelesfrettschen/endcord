@@ -12,7 +12,6 @@ Voice calls
     send and receive RTCP?
     send speaking event?
 
-Optimize main loop with queues and threading
 Fix member list not updating when switching between same-guild channels
 Vim-like bindings
 Video calls

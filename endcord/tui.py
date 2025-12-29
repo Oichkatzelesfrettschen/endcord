@@ -487,7 +487,9 @@ class TUI():
             self.need_update.set()
         self.draw_status_line()
         self.draw_chat()
-        self.update_prompt(self.prompt)   # draw_input_line() is called in here
+        self.update_prompt(self.prompt)
+        self.spellcheck()
+        self.draw_input_line()
         self.draw_tree()
         if self.have_title:
             self.draw_title_line()
@@ -553,7 +555,9 @@ class TUI():
         self.draw_status_line()
         self.draw_border(chat_hwyx, top=not(self.have_title))
         self.draw_chat()
-        self.update_prompt(self.prompt)   # draw_input_line() is called in here
+        self.update_prompt(self.prompt)
+        self.spellcheck()
+        self.draw_input_line()
         self.draw_border(tree_hwyx, top=not(self.have_title_tree))
         self.draw_tree()
         if self.have_title:
@@ -1363,7 +1367,7 @@ class TUI():
 
 
     def draw_prompt(self):
-        """Draw prompt line"""
+        """Draw prompt line, resize input line but dont redraw it"""
         with self.lock:
             h, w = self.screen.getmaxyx()
             del (self.win_prompt, self.win_input_line)
@@ -1374,8 +1378,6 @@ class TUI():
                 self.tree_width + len(self.prompt) + 2*self.bordered + 1)
             self.win_input_line = self.screen.derwin(*input_line_hwyx)
             self.input_hw = self.win_input_line.getmaxyx()
-            self.spellcheck()
-            self.draw_input_line()
             prompt_hwyx = (1, len(self.prompt), h - 1 - self.bordered, self.tree_width + 2*self.bordered + 1)
             self.win_prompt = self.screen.derwin(*prompt_hwyx)
             self.win_prompt.insstr(0, 0, self.prompt, curses.color_pair(13) | self.attrib_map[13])
@@ -1755,7 +1757,7 @@ class TUI():
 
 
     def update_prompt(self, prompt):
-        """Draw prompt line and resize input line"""
+        """Update and draw prompt line, resize input line but dont redraw it"""
         self.prompt = prompt
         if not self.disable_drawing:
             self.draw_prompt()
@@ -1884,33 +1886,34 @@ class TUI():
 
     def spellcheck(self):
         """Spellcheck words visible on screen"""
-        if self.bracket_paste:
+        if not self.input_buffer or self.enable_autocomplete or self.bracket_paste:
             return
+        import traceback
+        logger.info("".join(traceback.format_stack()))
         w = self.input_hw[1]
-        input_buffer = self.input_buffer
-        line_start = max(0, len(input_buffer) - w + 1 - self.input_line_index)
-        # first space before line_start in input_buffer
-        if split_char_in(input_buffer[:line_start]):
-            range_word_start = len(rersplit_0(input_buffer[:line_start])) + bool(line_start)
+        line_start = max(0, len(self.input_buffer) - w + 1 - self.input_line_index)
+        # first space before line_start in self.input_buffer
+        if split_char_in(self.input_buffer[:line_start]):
+            range_word_start = len(rersplit_0(self.input_buffer[:line_start])) + bool(line_start)
         else:
             range_word_start = 0
         # when input buffer cant fit on screen
-        if len(input_buffer) > w:
-            # first space after line_start + input_line_w in input_buffer
-            range_word_end = line_start + w + len(resplit(input_buffer[line_start+w:])[0])
+        if len(self.input_buffer) > w:
+            # first space after line_start + input_line_w in self.input_buffer
+            range_word_end = line_start + w + len(resplit(self.input_buffer[line_start+w:])[0])
         else:
             # first space before last word
-            range_word_end = len(input_buffer) - len(resplit(input_buffer)[-1]) - split_char_in(input_buffer)
+            range_word_end = len(self.input_buffer) - len(resplit(self.input_buffer)[-1]) - split_char_in(self.input_buffer)
         # indexes of words visible on screen
         spelling_range = [range_word_start, range_word_end]
         if spelling_range != self.spelling_range:
-            words_on_screen = resplit(input_buffer[range_word_start:range_word_end])
+            words_on_screen = resplit(self.input_buffer[range_word_start:range_word_end])
             misspelled_words_on_screen = self.spellchecker.check_list(words_on_screen)
             misspelled_words_on_screen.append(False)
             # loop over all words visible on screen
             self.misspelled = []
             index = 0
-            for num, word in enumerate(resplit(input_buffer[line_start:line_start+w])):
+            for num, word in enumerate(resplit(self.input_buffer[line_start:line_start+w])):
                 word_len = len(word)
                 if misspelled_words_on_screen[num]:
                     self.misspelled.append([index, word_len])
@@ -2139,8 +2142,9 @@ class TUI():
                 self.cursor_pos = max(self.cursor_pos, 0)
                 self.cursor_pos = min(w - 1, self.cursor_pos)
         if not self.disable_drawing:
+            self.update_prompt(prompt)
             self.spellcheck()
-            self.update_prompt(prompt)   # draw_input_line() is called in here
+            self.draw_input_line()
         if clear_delta:
             self.delta_store = []
             self.last_key = None
@@ -2291,6 +2295,7 @@ class TUI():
                 if self.assist:
                     if chr(key) in ASSIST_TRIGGERS:
                         self.assist_start = self.input_index
+                self.spellcheck()
 
             elif key == BACKSPACE:
                 if self.input_select_start is not None:
@@ -2304,6 +2309,7 @@ class TUI():
                         selected_completion = 0
                     self.add_to_delta_store("BACKSPACE", removed_char)
                     self.show_cursor()
+                self.spellcheck()
 
             elif key == curses.KEY_DC:   # DEL
                 if self.input_select_start is not None:
@@ -2314,6 +2320,7 @@ class TUI():
                     self.input_buffer = self.input_buffer[:self.input_index] + self.input_buffer[self.input_index+1:]
                     self.add_to_delta_store("DELETE", removed_char)
                     self.show_cursor()
+                self.spellcheck()
 
             elif key == curses.KEY_LEFT:
                 if self.input_index > 0:
@@ -2324,6 +2331,7 @@ class TUI():
                         self.input_index -= 1
                     self.show_cursor()
                 self.input_select_start = None
+                self.spellcheck()
 
             elif key == curses.KEY_RIGHT:
                 if self.input_index < len(self.input_buffer):
@@ -2334,15 +2342,18 @@ class TUI():
                         self.input_index += 1
                     self.show_cursor()
                 self.input_select_start = None
+                self.spellcheck()
 
             elif key == curses.KEY_HOME:
                 self.input_index = 0
                 self.input_line_index = 0
                 self.input_select_start = None
+                self.spellcheck()
 
             elif key == curses.KEY_END:
                 self.input_index = len(self.input_buffer)
                 self.input_select_start = None
+                self.spellcheck()
 
             elif key in self.keybindings["word_left"]:
                 left_len = 0
@@ -2359,6 +2370,7 @@ class TUI():
                     self.input_line_index -= input_line_index_diff - 4   # diff is negative
                     self.input_line_index = min(max(0, self.input_line_index), max(0, len(self.input_buffer) - w))
                 self.input_select_start = None
+                self.spellcheck()
 
             elif key in self.keybindings["word_right"]:
                 left_len = 0
@@ -2375,6 +2387,7 @@ class TUI():
                     self.input_line_index -= input_line_index_diff + 4   # diff is negative
                     self.input_line_index = min(max(0, self.input_line_index), max(0, len(self.input_buffer) - w))
                 self.input_select_start = None
+                self.spellcheck()
 
             elif key in self.keybindings["select_word_left"]:
                 if self.input_select_start is None:
@@ -2395,6 +2408,7 @@ class TUI():
                 if self.input_select_start is not None:
                     self.input_select_end -= left_len
                     self.input_select_end = min(max(0, self.input_select_end), len(self.input_buffer))
+                self.spellcheck()
 
             elif key in self.keybindings["select_word_right"]:
                 if self.input_select_start is None:
@@ -2415,7 +2429,7 @@ class TUI():
                 if self.input_select_start is not None:
                     self.input_select_end += left_len
                     self.input_select_end = min(max(0, self.input_select_end), len(self.input_buffer))
-
+                self.spellcheck()
 
             elif key in self.keybindings["undo"]:
                 self.add_to_delta_store("UNDO")
@@ -2441,6 +2455,7 @@ class TUI():
                         self.input_buffer = self.input_buffer[:delta_index+1] + delta_text + self.input_buffer[delta_index+1:]
                         self.input_index = delta_index + 1
                 self.input_select_start = None
+                self.spellcheck()
 
             elif key in self.keybindings["redo"]:
                 self.add_to_delta_store("REDO")
@@ -2458,6 +2473,7 @@ class TUI():
                         self.input_buffer = self.input_buffer[:delta_index + 1] + self.input_buffer[delta_index + len(delta_text) + 1:]
                         self.input_index = delta_index + 1
                 self.input_select_start = None
+                self.spellcheck()
 
             elif key in self.keybindings["select_left"]:
                 if self.input_select_start is None:
@@ -2529,6 +2545,7 @@ class TUI():
                 self.input_buffer = self.input_buffer[:self.input_index] + "\n" + self.input_buffer[self.input_index:]
                 self.input_index += 1
                 self.show_cursor()
+                self.spellcheck()
 
             elif key in self.keybindings["reply"] and self.chat_selected != -1 and not forum:
                 return self.return_input_code(1)
@@ -2652,8 +2669,6 @@ class TUI():
             self.cursor_pos = self.input_index - max(0, len(self.input_buffer) - w + 1 - self.input_line_index)
             self.cursor_pos = max(self.cursor_pos, 0)
             self.cursor_pos = min(w - 1, self.cursor_pos)
-            if not self.enable_autocomplete:
-                self.spellcheck()
             if not self.disable_drawing:
                 self.draw_input_line()
         return None, None, None, None
