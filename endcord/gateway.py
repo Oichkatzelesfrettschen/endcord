@@ -1208,11 +1208,12 @@ class Gateway():
 
                 elif self.want_member_list and optext == "GUILD_MEMBER_LIST_UPDATE":
                     guild_id = data["guild_id"]
+                    list_id = data["id"]
                     for guild_index, guild in enumerate(self.activities):
-                        if guild["guild_id"] == guild_id:
+                        if guild[0] == guild_id:
                             break
                     else:
-                        self.activities.append({"guild_id": guild_id, "members": []})
+                        self.activities.append([guild_id, {}])   # [guild_id, member_lists]
                         guild_index = -1
                     for memlist in data["ops"]:
                         # keeping only necessary data, because the rest can be fetched with discord.get_user_guild()
@@ -1225,22 +1226,23 @@ class Gateway():
                                 if "group" in item:
                                     members_sync.append({"group": item["group"]["id"]})
                                 else:
-                                    custom_status = None
                                     member_data = item["member"]
-                                    activities = []
-                                    for activity in member_data["presence"]["activities"]:
-                                        if activity["type"] == 4:
-                                            custom_status = activity.get("state", "")
-                                        elif activity["type"] in (0, 2):
-                                            assets = activity.get("assets", {})
-                                            activities.append({
-                                                "type": activity["type"],
-                                                "name": activity["name"],
-                                                "state": activity.get("state"),
-                                                "details": activity.get("details"),
-                                                "small_text": assets.get("small_text"),
-                                                "large_text": assets.get("large_text"),
-                                            })
+                                    ## unused for now
+                                    # custom_status = None
+                                    # activities = []
+                                    # for activity in member_data["presence"]["activities"]:
+                                    #     if activity["type"] == 4:
+                                    #         custom_status = activity.get("state", "")
+                                    #     elif activity["type"] in (0, 2):
+                                    #         assets = activity.get("assets", {})
+                                    #         activities.append({
+                                    #             "type": activity["type"],
+                                    #             "name": activity["name"],
+                                    #             "state": activity.get("state"),
+                                    #             "details": activity.get("details"),
+                                    #             "small_text": assets.get("small_text"),
+                                    #             "large_text": assets.get("large_text"),
+                                    #         })
                                     members_sync.append({
                                         "id": member_data["user"]["id"],
                                         "username": member_data["user"]["username"],
@@ -1248,26 +1250,27 @@ class Gateway():
                                         "nick": member_data["nick"],
                                         "roles": member_data["roles"],
                                         "status": member_data["presence"]["status"],
-                                        "custom_status": custom_status,
-                                        "activities": activities,
+                                        # "custom_status": custom_status,
+                                        # "activities": activities,
                                     })
-                            self.activities[guild_index]["members"] = members_sync
-                            self.activities[guild_index]["last_index"] = 0
+                            self.activities[guild_index][1][list_id] = [0, members_sync]
                             self.activities_changed.append(guild_id)
                         elif memlist["op"] == "DELETE":
                             try:
-                                del self.activities[guild_index]["members"][memlist["index"]]
-                            except IndexError:
+                                del self.activities[guild_index][1][list_id][1][memlist["index"]]
+                            except (IndexError, NameError):
                                 pass
                         elif memlist["op"] in ("UPDATE", "INSERT"):
                             custom_status = None
+                            if list_id not in self.activities[guild_index][1]:
+                                self.activities[guild_index][1][list_id] = [0, []]   # [last_index, members]
                             if "group" in memlist["item"]:
                                 # group can only be inserted
-                                self.activities[guild_index]["members"].insert(memlist["index"], {"group": memlist["item"]["group"]["id"]})
-                                if len(self.activities[guild_index]["members"]) > 100:
-                                    self.activities[guild_index]["members"].pop(-1)
+                                self.activities[guild_index][1][list_id][1].insert(memlist["index"], {"group": memlist["item"]["group"]["id"]})
+                                if len(self.activities[guild_index][1][list_id][1]) > 100:
+                                    self.activities[guild_index][1][list_id][1].pop(-1)
                                 self.activities_changed.append(guild_id)
-                                self.activities[guild_index]["last_index"] = int(memlist["index"])
+                                self.activities[guild_index][1][list_id][0] = int(memlist["index"])
                                 continue
                             member_data = memlist["item"]["member"]
                             activities = []
@@ -1292,24 +1295,24 @@ class Gateway():
                                 "nick": member_data["nick"],
                                 "roles": member_data["roles"],
                                 "status": member_data["presence"]["status"],
-                                "custom_status": custom_status,
-                                "activities": activities,
+                                # "custom_status": custom_status,
+                                # "activities": activities,
                             }
                             if memlist["op"] == "UPDATE":
                                 try:
-                                    if self.activities[guild_index]["members"][memlist["index"]].get("id") == member_id:
-                                        self.activities[guild_index]["members"][memlist["index"]].update(ready_data)
+                                    if self.activities[guild_index][1][list_id][1][memlist["index"]].get("id") == member_id:
+                                        self.activities[guild_index][1][list_id][1][memlist["index"]].update(ready_data)
                                     else:   # failsafe
-                                        for num, member in enumerate(self.activities[guild_index]["members"]):
+                                        for num, member in enumerate(self.activities[guild_index][1][list_id]["members"]):
                                             if member.get("id") == member_id:
-                                                self.activities[guild_index]["members"][num].update(ready_data)
+                                                self.activities[guild_index][1][list_id][1][num].update(ready_data)
                                 except IndexError:
                                     pass
                             else:   # INSERT
-                                self.activities[guild_index]["members"].insert(memlist["index"], ready_data)
-                                if len(self.activities[guild_index]["members"]) > 100:   # lets have some limits
-                                    self.activities[guild_index]["members"].pop(-1)
-                            self.activities[guild_index]["last_index"] = int(memlist["index"])
+                                self.activities[guild_index][1][list_id][1].insert(memlist["index"], ready_data)
+                                if len(self.activities[guild_index][1][list_id][1]) > 100:   # lets have some limits
+                                    self.activities[guild_index][1][list_id][1].pop(-1)
+                            self.activities[guild_index][1][list_id][0] = int(memlist["index"])
                         self.activities_changed.append(guild_id)
 
                 elif optext == "USER_SETTINGS_PROTO_UPDATE":

@@ -543,7 +543,7 @@ class Endcord:
         self.search_messages = []
         self.members = []
         self.subscribed_members = []
-        self.current_members = []
+        self.member_list = []
         self.got_commands = False
         self.my_commands = []
         self.my_apps = []
@@ -832,18 +832,23 @@ class Endcord:
             elif not self.in_call:
                 self.update_extra_line(permanent=True)
 
-        # select guild member activities
+        # select guild member list and subscribed
         if guild_id:
             if self.get_members:
                 for guild in self.members:
-                    if guild["guild_id"] == guild_id:
-                        self.current_members = guild["members"]
+                    if guild[0] == guild_id:
+                        if "everyone" in guild[1]:
+                            self.member_list = guild[1]["everyone"][1]
+                        elif guild[1]:
+                            self.member_list = next(iter(guild[1].values()))[1]   # fix_member_list_selection
+                        else:
+                            self.member_list = []
                         break
                 else:
-                    self.current_members = []
+                    self.member_list = []
             for guild in self.subscribed_members:
-                if guild["guild_id"] ==guild_id:
-                    self.current_subscribed_members = guild["members"]
+                if guild["guild_id"] == guild_id:
+                    self.current_subscribed_members = guild[1]
                     break
                 else:
                     self.current_subscribed_members = []
@@ -941,7 +946,7 @@ class Endcord:
             self.recording = False
             _ = recorder.stop()
 
-        self.current_members = []
+        self.member_list = []
         self.current_roles = []
         self.current_my_roles = []
         self.current_member_roles = []
@@ -1685,9 +1690,9 @@ class Endcord:
                             self.tui.set_input_index(new_index)
                 elif self.member_list_visible:   # controls for member list when no extra window
                     mlist_selected = self.tui.get_mlist_selected()
-                    if mlist_selected >= len(self.current_members):
+                    if mlist_selected >= len(self.member_list):
                         continue
-                    member = self.current_members[mlist_selected]
+                    member = self.member_list[mlist_selected]
                     if "id" in member:
                         self.restore_input_text = (input_text, "standard extra")
                         user_id = member["id"]
@@ -4282,18 +4287,12 @@ class Endcord:
         if user_id == self.my_id:
             selected_presence = self.my_status
         elif guild_id:
-            if self.get_members:   # first check member list
-                for presence in self.current_members:
-                    if "id" in presence and presence["id"] == user_id:
-                        selected_presence = presence
-                        break
-            if not selected_presence:   # then check subscribed list
-                for presence in self.current_subscribed_members:
-                    if presence["id"] == user_id:
-                        selected_presence = presence
-                        break
-                else:   # if none, then subscribe
-                    self.gateway.subscribe_member(user_id, guild_id)
+            for presence in self.current_subscribed_members:
+                if presence["id"] == user_id:
+                    selected_presence = presence
+                    break
+            else:   # if none, then subscribe
+                self.gateway.subscribe_member(user_id, guild_id)
         else:   # dms
             for presence in self.activities:
                 if "id" in presence and presence["id"] == user_id:
@@ -5152,7 +5151,7 @@ class Endcord:
         if last_index is not None and not self.tui.mlist_index-1 < last_index < self.tui.mlist_index-1 + self.screen.getmaxyx()[0]:
             return   # dont regenerate for changes that are not visible
         member_list, member_list_format = formatter.generate_member_list(
-            self.current_members,
+            self.member_list,
             self.current_roles,
             self.member_list_width,
             self.use_nick,
@@ -7156,13 +7155,19 @@ class Endcord:
                     self.members = new_members
                     last_index = 99
                     for guild in new_members:   # select guild
-                        if guild["guild_id"] == self.active_channel["guild_id"]:
-                            self.current_members = guild["members"]
-                            last_index = guild["last_index"]
+                        if guild[0] == self.active_channel["guild_id"]:
+                            if "everyone" in guild[1]:
+                                self.member_list = guild[1]["everyone"][1]
+                                last_index = guild[1]["everyone"][0]
+                            elif guild[1]:
+                                self.member_list = next(iter(guild[1].values()))[1]   # fix_member_list_selection
+                                last_index = next(iter(guild[1].values()))[0]
+                            else:
+                                self.member_list = []
+                                last_index = None
+
                             break
                     if self.active_channel["guild_id"] in changed_guilds:
-                        if self.viewing_user_data["id"]:
-                            self.view_profile(self.viewing_user_data)
                         if self.member_list_visible:
                             self.update_member_list(last_index)
 

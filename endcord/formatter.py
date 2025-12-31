@@ -2185,7 +2185,7 @@ def generate_member_list(member_list_raw, guild_roles, width, use_nick, status_s
     member_list = []
     member_list_format = []
     if not member_list_raw:
-        return [normalize_string("No online members", width-1)], [[]]
+        return ["No members".center(width-1, " ")], [[]]
     for member in member_list_raw:
         this_format = []
         if "id" in member:
@@ -2224,7 +2224,7 @@ def generate_member_list(member_list_raw, guild_roles, width, use_nick, status_s
                 if role["id"] == group_id:
                     text = role["name"]
             this_format = []
-        member_list.append(normalize_string(text, width-1, emoji_safe=True))
+        member_list.append(normalize_string(text + " ", width-1, emoji_safe=True))
         member_list_format.append(this_format)
 
     return member_list, member_list_format

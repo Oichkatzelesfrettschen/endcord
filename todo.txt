@@ -1,3 +1,5 @@
+Fix emojis messing right edge
+
 Voice channels
     add voice channels to tree
     show voice channel activity
@@ -12,7 +14,7 @@ Voice calls
     send and receive RTCP?
     send speaking event?
 
-Fix member list not updating when switching between same-guild channels
+Fix per-channel member list
 Vim-like bindings
 Video calls
 Localization
