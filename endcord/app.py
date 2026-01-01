@@ -189,6 +189,7 @@ class Endcord:
         self.input_store = []
         self.running_tasks = []
         self.cached_downloads = []
+        self.tabs_names = []
         self.last_summary_save = time.time() - SUMMARY_SAVE_INTERVAL - 1
 
         # get client properties
@@ -4811,6 +4812,14 @@ class Endcord:
                     score_cutoff=self.assist_score_cutoff,
                 )
 
+            elif assist_word.lower().startswith("switch_tab "):
+                self.assist_found = search.search_tabs(
+                    self.tabs_names,
+                    assist_word[11:],
+                    limit=self.assist_limit,
+                    score_cutoff=self.assist_score_cutoff,
+                )
+
             elif assist_word:
                 self.assist_found = search.search_client_commands(
                     COMMAND_ASSISTS,
@@ -4926,7 +4935,7 @@ class Endcord:
             insert_string = f"<;{self.assist_found[index][1]};>"   # format: "<;ID;>"
         elif self.assist_type == 5:   # command
             if self.assist_found[index][1]:
-                if input_text.endswith(" ") and input_text not in ("set ", "string_select ", "set_notifications ", "game_detection_blacklist "):
+                if input_text.endswith(" ") and input_text not in ("set ", "string_select ", "set_notifications ", "game_detection_blacklist ", "switch_tab "):
                     self.tui.instant_assist = False
                     command_type, command_args = parser.command_string(input_text)
                     self.close_extra_window()
@@ -5198,15 +5207,15 @@ class Endcord:
                     "guild_name": "DM",
                 })
         # sort names
-        tabs_names = []
+        self.tabs_names = []
         for tab in tabs:
             for named_tab in tabs_names_unsorted:
                 if named_tab["channel_id"] == tab:
-                    tabs_names.append(named_tab)
+                    self.tabs_names.append(named_tab)
 
         # build tab string
         self.tab_string, self.tab_string_format = formatter.generate_tab_string(
-            tabs_names,
+            self.tabs_names,
             active_tab_index,
             self.get_unseen(),
             self.config["format_tabs"],

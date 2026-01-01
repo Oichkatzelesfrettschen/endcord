@@ -36,11 +36,11 @@ match_sticker_id = re.compile(r"<;\d*?;>")
 match_md_all = re.compile(
     r"""
     (?<!\\)(
-        (__[^_]+__)      |   # underline
-        (\*\*[^\*]+\*\*) |   # bold
-        # (~~[^~]+~~)    |   # strikethrough - unused
-        (_[^_]+_)        |   # italic _
-        (\*[^\*]+\*)         # italic *
+        (__[^_]+__)          |   # underline
+        (\*\*[^\*]+\*\*)     |   # bold
+        # (~~[^~]+~~)        |   # strikethrough - unused
+        (?<!\w)_[^_]+_(?!\w) |   # italic _
+        (\*[^\*]+\*)             # italic *
     )
     """,
     re.VERBOSE,

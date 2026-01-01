@@ -3,8 +3,8 @@ from datetime import datetime
 
 PLATFORM_TYPES = ("Desktop", "Xbox", "Playstation", "IOS", "Android", "Nitendo", "Linux", "MacOS")
 CONTENT_TYPES = ("Played Game", "Watched Media", "Top Game", "Listened Media", "Listened Session", "Top Artist", "Custom Status", "Launched Activity", "Leaderboard")
-DISCORDAPP_CDN_ATTACHMENTS = "https://cdn.discordapp.com/attachments/"
-match_discord_attachment_url = re.compile(r"https:\/\/cdn\.discord(?:app)?\.com\/attachments\/\d+\/\d+\/([^\?\s)\]>]+)(?:\?.+)?")
+DISCORDAPP_CDN_ATTACHMENTS = ("https://cdn.discordapp.com/attachments/", "https://media.discordapp.net/attachments")
+match_discord_attachment_url = re.compile(r"https:\/\/(?:cdn|media)\.discord(?:app)?\.(?:com|net)\/attachments\/\d+\/\d+\/([^\?\s)\]>]+)(?:\?.+)?")
 match_url = re.compile(r"https?:\/\/\w+(\.\w+)+[^\s)\]>]*")
 
 
@@ -71,7 +71,7 @@ def prepare_embeds(embeds, message_content):
                 media.append(False)
 
         content = content.strip("\n")
-        if content and (content not in message_content or DISCORDAPP_CDN_ATTACHMENTS in content):
+        if content and (content not in message_content or any(x in content for x in DISCORDAPP_CDN_ATTACHMENTS)):
             ready_data = {
                 "type": embed_type,   # spacebar_fix - get
                 "name": None,
@@ -88,7 +88,7 @@ def prepare_embeds(embeds, message_content):
 def content_to_attachment(message, embeds):
     """Convert attachment url in message content into real attachment"""
     content = message["content"]
-    if DISCORDAPP_CDN_ATTACHMENTS in content:
+    if any(x in content for x in DISCORDAPP_CDN_ATTACHMENTS):
 
         matches = []
         def collect(m):
