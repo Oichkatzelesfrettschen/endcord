@@ -850,7 +850,7 @@ class Endcord:
                     self.member_list = []
             for guild in self.subscribed_members:
                 if guild["guild_id"] == guild_id:
-                    self.current_subscribed_members = guild[1]
+                    self.current_subscribed_members = guild["members"]
                     break
                 else:
                     self.current_subscribed_members = []
