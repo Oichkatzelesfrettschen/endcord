@@ -44,11 +44,12 @@ jobs:
 
       - name: Build Binary (PyInstaller)
         # We use PyInstaller here because Nuitka is very slow on free CI runners and may timeout.
-        # If you have paid runners, change this to: uv run build.py --nuitka --onefile
+        # If you have paid runners, change this to: uv run build.py --nuitka
+        # Default is single-file build (no --onedir flag)
         working-directory: ./endcord-upstream
         run: |
           uv sync --group build
-          uv run build.py --onefile
+          uv run build.py
           
       - name: Prepare Debian Package Structure
         id: prep
