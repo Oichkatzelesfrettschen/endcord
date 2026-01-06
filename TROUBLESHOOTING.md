@@ -288,7 +288,7 @@ Job exceeded the timeout limit
 - Nuitka compilation is slow on free runners (can take 30-60 minutes)
 - Complex dependencies
 - Insufficient resources
-- Note: Free GitHub Actions have a 6-hour maximum timeout, but builds should complete in 5-10 minutes
+- Note: On free GitHub Actions runners, jobs can run for up to 6 hours (maximum allowed timeout). Our PyInstaller-based builds normally finish in 5–10 minutes, so this limit is not usually a concern for this workflow.
 
 **Solutions:**
 
