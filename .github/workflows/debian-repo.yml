@@ -137,15 +137,45 @@ jobs:
           # Setup Repo Structure
           mkdir -p pool/main
           mkdir -p dists/stable/main/binary-amd64
-          
+
+          # Create index.html for root URL
+          cat > index.html << 'INDEXEOF'
+<!DOCTYPE html>
+<html>
+<head><title>Endcord APT Repository</title>
+<style>body{font-family:system-ui;max-width:700px;margin:50px auto;padding:20px;line-height:1.6}
+pre{background:#f4f4f4;padding:15px;overflow-x:auto;border-radius:5px}code{background:#f4f4f4;padding:2px 6px;border-radius:3px}</style>
+</head>
+<body>
+<h1>Endcord APT Repository</h1>
+<p>Unofficial community repack of <a href="https://github.com/sparklost/endcord">Endcord</a> for Debian/Ubuntu.</p>
+<h2>Quick Install</h2>
+<pre>wget -qO - https://oichkatzelesfrettschen.github.io/endcord/public.key | \
+  sudo gpg --dearmor -o /etc/apt/keyrings/endcord-archive-keyring.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/endcord-archive-keyring.gpg arch=amd64] \
+  https://oichkatzelesfrettschen.github.io/endcord/ stable main" | \
+  sudo tee /etc/apt/sources.list.d/endcord.list
+
+sudo apt update && sudo apt install endcord</pre>
+<h2>Files</h2>
+<ul>
+<li><a href="public.key">GPG Public Key</a></li>
+<li><a href="dists/stable/Release">Release</a></li>
+<li><a href="dists/stable/main/binary-amd64/Packages">Packages</a></li>
+</ul>
+<p><small>Not affiliated with the official Endcord team.</small></p>
+</body>
+</html>
+INDEXEOF
+
           # Move new deb file to pool
           cp ../deb-build/*.deb pool/main/
           
-          # Generate Packages file
-          cd dists/stable/main/binary-amd64
-          apt-ftparchive packages ../../../../pool/main > Packages
-          cat Packages | gzip -9 > Packages.gz
-          cd ../../
+          # Generate Packages file (run from repo root for correct paths)
+          apt-ftparchive packages pool/main > dists/stable/main/binary-amd64/Packages
+          gzip -9 -k dists/stable/main/binary-amd64/Packages
+          cd dists/stable
           
           # Generate Release file
           {
