@@ -281,13 +281,14 @@ E: Failed to fetch...
 **Symptoms:**
 ```
 Error: The operation was canceled.
-Job timed out after 360 minutes
+Job exceeded the timeout limit
 ```
 
 **Causes:**
-- Nuitka compilation is slow on free runners
+- Nuitka compilation is slow on free runners (can take 30-60 minutes)
 - Complex dependencies
 - Insufficient resources
+- Note: Free GitHub Actions have a 6-hour maximum timeout, but builds should complete in 5-10 minutes
 
 **Solutions:**
 
