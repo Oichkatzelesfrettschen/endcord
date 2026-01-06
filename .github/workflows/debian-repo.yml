@@ -1,0 +1,171 @@
+name: Build and Publish Debian Repository
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Runs at 2:00 AM UTC daily
+  workflow_dispatch:     # Allows manual trigger
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-24.04  # Closest match to Debian Trixie glibc
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout your repo (for scripts)
+        uses: actions/checkout@v4
+        with:
+          path: my-repo
+
+      - name: Checkout Upstream Endcord
+        uses: actions/checkout@v4
+        with:
+          repository: sparklost/endcord
+          path: endcord-upstream
+          fetch-depth: 0
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-dev build-essential dpkg-dev apt-utils clang libncurses-dev
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.14"
+          enable-cache: false
+      
+      - name: Setup GPG
+        id: setup-gpg
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Build Binary (PyInstaller)
+        # We use PyInstaller here because Nuitka is very slow on free CI runners and may timeout.
+        # If you have paid runners, change this to: uv run build.py --nuitka --onefile
+        working-directory: ./endcord-upstream
+        run: |
+          uv sync --group build
+          uv run build.py --onefile
+          
+      - name: Prepare Debian Package Structure
+        id: prep
+        run: |
+          # Define version based on upstream version + date
+          cd endcord-upstream
+          BASE_VER=$(grep 'version =' pyproject.toml | head -1 | cut -d '"' -f 2)
+          DATE_TAG=$(date +%Y%m%d)
+          FULL_VER="${BASE_VER}-nightly${DATE_TAG}"
+          echo "VERSION=$FULL_VER" >> $GITHUB_ENV
+          
+          # Create Staging Area
+          mkdir -p ../deb-build/endcord_${FULL_VER}_amd64/usr/bin
+          mkdir -p ../deb-build/endcord_${FULL_VER}_amd64/usr/share/applications
+          mkdir -p ../deb-build/endcord_${FULL_VER}_amd64/DEBIAN
+          
+          # Copy Binary
+          cp dist/endcord ../deb-build/endcord_${FULL_VER}_amd64/usr/bin/endcord
+          chmod +x ../deb-build/endcord_${FULL_VER}_amd64/usr/bin/endcord
+
+      - name: Generate Control and Desktop Files
+        working-directory: ./deb-build
+        run: |
+          PKG_DIR="endcord_${{ env.VERSION }}_amd64"
+          
+          # 1. Control File
+          cat <<EOF > $PKG_DIR/DEBIAN/control
+          Package: endcord
+          Version: ${{ env.VERSION }}
+          Architecture: amd64
+          Maintainer: Endcord Fork Maintainer <no-reply@github.com>
+          Installed-Size: $(du -ks $PKG_DIR/usr | cut -f1)
+          Section: net
+          Priority: optional
+          Homepage: https://github.com/sparklost/endcord
+          Description: Feature rich Discord TUI client (Nightly Build)
+           This is an automated build of Endcord packaged for Debian.
+           It connects to Discord via the terminal.
+          EOF
+          
+          # 2. Desktop Entry
+          cat <<EOF > $PKG_DIR/usr/share/applications/endcord.desktop
+          [Desktop Entry]
+          Name=Endcord
+          Exec=/usr/bin/endcord
+          Type=Application
+          Terminal=true
+          Categories=Network;Chat;
+          Keywords=discord;tui;
+          Comment=Discord TUI Client
+          EOF
+
+      - name: Build .deb
+        working-directory: ./deb-build
+        run: dpkg-deb --build --root-owner-group endcord_${{ env.VERSION }}_amd64
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages-repo
+          fetch-depth: 0
+        continue-on-error: true  # Might fail if branch doesn't exist yet
+
+      - name: Update Apt Repository
+        run: |
+          # Initialize gh-pages if it doesn't exist
+          if [ ! -d "gh-pages-repo/.git" ]; then
+            mkdir -p gh-pages-repo
+            cd gh-pages-repo
+            git init
+            git checkout -b gh-pages
+            git config user.name "GitHub Actions"
+            git config user.email "actions@github.com"
+          else
+            cd gh-pages-repo
+            git config user.name "GitHub Actions"
+            git config user.email "actions@github.com"
+          fi
+
+          # Setup Repo Structure
+          mkdir -p pool/main
+          mkdir -p dists/stable/main/binary-amd64
+          
+          # Move new deb file to pool
+          cp ../deb-build/*.deb pool/main/
+          
+          # Generate Packages file
+          cd dists/stable/main/binary-amd64
+          apt-ftparchive packages ../../../../pool/main > Packages
+          cat Packages | gzip -9 > Packages.gz
+          cd ../../
+          
+          # Generate Release file
+          cat <<EOF > Release
+          Origin: Endcord-Unofficial
+          Label: Endcord
+          Suite: stable
+          Codename: stable
+          Architectures: amd64
+          Components: main
+          Description: Unofficial Endcord Repository
+          Date: $(date -R)
+          EOF
+          
+          # Generate Hashes for Release
+          apt-ftparchive release . >> Release
+          
+          # Sign the Release
+          rm -f Release.gpg InRelease
+          gpg --default-key ${{ steps.setup-gpg.outputs.keyid }} -abs -o Release.gpg Release
+          gpg --default-key ${{ steps.setup-gpg.outputs.keyid }} --clearsign -o InRelease Release
+          
+          # Return to repo root
+          cd ../../..
+          
+          # Deploy
+          git add .
+          git commit -m "Update repo with version ${{ env.VERSION }}" || echo "No changes to commit"
+          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
