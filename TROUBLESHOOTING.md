@@ -428,16 +428,16 @@ cd dists/stable/main/binary-amd64
 apt-ftparchive packages ../../../../pool/main > Packages
 gzip -9 -c Packages > Packages.gz
 cd ../../
-cat > Release << EOF
-Origin: Endcord-Unofficial
-Label: Endcord
-Suite: stable
-Codename: stable
-Architectures: amd64
-Components: main
-Description: Unofficial Endcord Repository
-Date: $(date -R)
-EOF
+cat > Release <<-EOF
+	Origin: Endcord-Unofficial
+	Label: Endcord
+	Suite: stable
+	Codename: stable
+	Architectures: amd64
+	Components: main
+	Description: Unofficial Endcord Repository
+	Date: $(date -R)
+	EOF
 apt-ftparchive release . >> Release
 gpg --clearsign -o InRelease Release
 gpg -abs -o Release.gpg Release
