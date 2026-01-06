@@ -166,7 +166,7 @@ jobs:
           
           # Generate Packages file (run from repo root for correct paths)
           apt-ftparchive packages pool/main > dists/stable/main/binary-amd64/Packages
-          gzip -9 -k dists/stable/main/binary-amd64/Packages
+          gzip -9 -k -f dists/stable/main/binary-amd64/Packages
           cd dists/stable
           
           # Generate Release file
