@@ -117,7 +117,9 @@ jobs:
 
       - name: Update Apt Repository
         run: |
-          # Initialize gh-pages if it doesn't exist
+          REMOTE_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+
+          # Initialize gh-pages if it doesn't exist or checkout failed
           if [ ! -d "gh-pages-repo/.git" ]; then
             mkdir -p gh-pages-repo
             cd gh-pages-repo
@@ -125,10 +127,12 @@ jobs:
             git checkout -b gh-pages
             git config user.name "GitHub Actions"
             git config user.email "actions@github.com"
+            git remote add origin "$REMOTE_URL"
           else
             cd gh-pages-repo
             git config user.name "GitHub Actions"
             git config user.email "actions@github.com"
+            git remote set-url origin "$REMOTE_URL" || git remote add origin "$REMOTE_URL"
           fi
 
           # Setup Repo Structure
@@ -170,4 +174,4 @@ jobs:
           # Deploy
           git add .
           git commit -m "Update repo with version ${{ env.VERSION }}" || echo "No changes to commit"
-          git push --force "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+          git push --force origin gh-pages
