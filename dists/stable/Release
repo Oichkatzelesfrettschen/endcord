@@ -5,21 +5,21 @@ Codename: stable
 Architectures: amd64
 Components: main
 Description: Unofficial community repack of Endcord - Not affiliated with the official Endcord team
-Date: Tue, 06 Jan 2026 20:21:24 +0000
-Date: Tue, 06 Jan 2026 20:21:24 +0000
+Date: Tue, 06 Jan 2026 20:43:22 +0000
+Date: Tue, 06 Jan 2026 20:43:22 +0000
 MD5Sum:
- cd9894f8c9fe4904c7266eff7b699d56              304 Release
- 09546ecde302768a1070a6bc84f93d34              909 main/binary-amd64/Packages
- 6ffc4a5383e257db71a4067a0ef935d1              582 main/binary-amd64/Packages.gz
+ 511b5394843ee200d228ade1b1b4c3d1              304 Release
+ e4e6e4a9e60862bf147c197211e0cc87              897 main/binary-amd64/Packages
+ 6be32ecce20938a8819687958b1fdda3              586 main/binary-amd64/Packages.gz
 SHA1:
- eb43777ac4a42d33b06d58cfe61396609eedbe54              304 Release
- 4fb1f9e326c6a9891791c680435af31626cbe74a              909 main/binary-amd64/Packages
- 3141e0fcc9377fd9a40267a4b1f1ee36bbb1e7fb              582 main/binary-amd64/Packages.gz
+ 32ba426d33c542f19d871f0fa0fd315f39723208              304 Release
+ 45a2d104c9fb83890fb152671479c1a4fb439321              897 main/binary-amd64/Packages
+ a0420fb2b7d856e6b2b75f90416f6a897f1bf463              586 main/binary-amd64/Packages.gz
 SHA256:
- 2c5f537a8cfec250c4c869060264b59e9c2a34ca452f1f844add07d6fa48da81              304 Release
- f6ea78de9f102d89b1f88d18817b5a58e8e728e08d39d7f305756a8b7430f403              909 main/binary-amd64/Packages
- 5ea85357e1337ecb154e6a8727fea86508b2fb764591fca4083499b21c9755fd              582 main/binary-amd64/Packages.gz
+ 242a0ad600f7c7f1a0beebe44de833e1c1c8b1a4a24f107020f16b7ae22ed34d              304 Release
+ e4d4da11857a316f1e7693295a82a6d936c28ea1564d1ee625e6d857a6fcdb1a              897 main/binary-amd64/Packages
+ 85da61669ead69957d1c1747ecb554a3d306ef7f0fa361f07c01158c64c13335              586 main/binary-amd64/Packages.gz
 SHA512:
- e60f38d915357b7f2c9a7f1780b658067f50a5ae03ece14dd4abd5adac856cd557b2980e90e05ea08d619ccc9a155aaf9202b36e0d2755f172975db49ac21586              304 Release
- ddf8a751982081daa773aa2fce5f915443b7b7bc9374372626d2397193c5142690756f1bfd0538dde536282af055990b609beac80a31a082024751cfd5d11fed              909 main/binary-amd64/Packages
- 0cc8ad934960f011018739c4f9d14c1c6a565cb576acf58617e500289a522e689c2fc14c1a70d708b83c42dae7e1188c5b297ccff743439f1eda25fa78c883d3              582 main/binary-amd64/Packages.gz
+ a902eeef841b438add238433c2567d54d80f293c2220d66dc6e626d766bb422da1ac28f7b44335c30ed27378725fc41fd5c89c48a81307b1caca6b2880b7947f              304 Release
+ 0863873d6ee4b1ee712010f89e091abc1b9f9c5ca5ad7ba8ec1f126bc80617cf0d54018aea2e60ed3521a0b1598de196bc05f57f2374cb123e25af8eb234327d              897 main/binary-amd64/Packages
+ ce051e2e7dbed0f2ba0e9e28f8920140a7d76551aabf9f68c92196aebce7d841e59aa6b27147aa72b4a26203c2f529a746114a9540303773fcae8830794da984              586 main/binary-amd64/Packages.gz
