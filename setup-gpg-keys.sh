@@ -105,5 +105,9 @@ echo ""
 echo "Your GPG key ID is: $key_id"
 echo "Your public key fingerprint is:"
 gpg --fingerprint "$key_id"
+echo ""
+echo "Keys are stored in: $(pwd)/gpg-exports/"
+echo "Remember to delete private.key after uploading to GitHub Secrets!"
 
+# Return to original directory
 cd ..
