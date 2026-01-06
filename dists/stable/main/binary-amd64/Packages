@@ -6,11 +6,11 @@ Section: net
 Maintainer: Endcord Fork Maintainer <no-reply@github.com>
 Installed-Size: 76404
 Filename: pool/main/endcord_1.1.7-nightly20260106_amd64.deb
-Size: 77614016
-MD5sum: 2e38eff99e217ab32d8a9485a5a0c404
-SHA1: 1c831546956366530dd74c116e773594af822ed4
-SHA256: d755a64beccb7695c8b9ecc02041c617821c684c60a859956150cd9722430f27
-SHA512: ad35e1b5167d1ff53cede3aa051987280a9bbdcc0067e413447e5abf2a3d8f0a74c794997ee0e410c0907cb549af148d6d7ad31500b3ff89a4fa91150acfc3fa
+Size: 77614062
+MD5sum: dbbc8f5ed8d8bcd56f776df7ffb348e9
+SHA1: 5192a41ba4db496c37c69bd0729aeccfa7705dac
+SHA256: 57ae29ca4258473370c0a7281755609c9d9b54feec75010d0efcf7e921fcf81e
+SHA512: 79735daccb5b7655042d1478110e74b27e94f026f815c997b354fdbe9bb3872da1fb9832e4c431b043c2b0bcfd9f110d3d92381287838fe56cbc16f9f588ac64
 Homepage: https://github.com/sparklost/endcord
 Description: Feature rich Discord TUI client (Unofficial Community Repack)
  This is an unofficial community repack of Endcord for easier Debian installation.
