@@ -891,7 +891,7 @@ def generate_chat(messages, roles, channels, max_length, my_id, my_roles, member
         temp_wide_map = []
         mentioned = False
         edited = message.get("edited")   # failsafe
-        user_id = message["user_id"]
+        user_id = message.get("user_id")
         selected_color_spoiler = color_spoiler
         disable_formatting = False
 

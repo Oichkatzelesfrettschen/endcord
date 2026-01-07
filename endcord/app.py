@@ -46,7 +46,7 @@ uses_pgcurses = tui.uses_pgcurses
 
 logger = logging.getLogger(__name__)
 ENABLE_EXTENSIONS = True
-MESSAGE_UPDATE_ELEMENTS = ("id", "content", "mentions", "mention_roles", "mention_everyone", "embeds")
+MESSAGE_UPDATE_ELEMENTS = ("id", "content", "mentions", "mention_roles", "mention_everyone", "embeds", "edited")
 MEDIA_EMBEDS = ("image", "gifv", "video", "audio", "rich")
 STATUS_STRINGS = ("online", "idle", "dnd", "invisible")
 ERROR_TEXT = "\nUnhandled exception occurred. Please report here: https://github.com/sparklost/endcord/issues"
@@ -516,7 +516,7 @@ class Endcord:
         self.tab_string = ""
         self.tab_string_format = []
         self.new_unreads = False
-        self.this_uread = False
+        self.this_unread = False
         self.chat_indexes = []
         self.chat_map = []
         if self.my_user_data:
@@ -798,7 +798,9 @@ class Endcord:
                     select_message_index = len(self.messages) - 2
             else:
                 select_message_index = None
-        self.this_uread = select_message_index is not None
+        else:
+            select_message_index = None
+        self.this_unread = select_message_index is not None
 
         # misc
         self.typing = []
@@ -1944,7 +1946,19 @@ class Endcord:
                 clicked_chat, mouse_x = self.tui.get_clicked_chat()
                 if clicked_chat is not None and mouse_x is not None:
                     chat_line_map = self.chat_map[clicked_chat]
-                    if chat_line_map:
+                    if self.forum:
+                        messages = self.messages + self.forum_old
+                        message = messages[self.lines_to_msg(clicked_chat)]
+                        self.switch_channel(
+                            message["id"],
+                            message["name"],
+                            self.active_channel["guild_id"],
+                            self.active_channel["guild_name"],
+                            parent_hint=self.active_channel["channel_id"],
+                        )
+                        self.reset_actions()
+                        self.update_status_line()
+                    elif chat_line_map:
                         msg_index = chat_line_map[0]
                         clicked_type = None
                         selected = None
@@ -4622,10 +4636,13 @@ class Endcord:
                         # validate discord emoji before adding it
                         valid = False
                         guild_emojis = []
-                        for guild in self.gateway.get_emojis():
-                            if guild["guild_id"] == self.active_channel["guild_id"]:
+                        if self.premium:
+                            for guild in self.gateway.get_emojis():
                                 guild_emojis += guild["emojis"]
-                                if not self.premium:
+                        else:
+                            for guild in self.gateway.get_emojis():
+                                if guild["guild_id"] == self.active_channel["guild_id"]:
+                                    guild_emojis += guild["emojis"]
                                     break
                         for guild_emoji in guild_emojis:
                             if guild_emoji["id"] == emoji_id:
@@ -5204,15 +5221,18 @@ class Endcord:
                         self.messages = channel["threads"]
                         break
                 break
+        messages = self.messages + self.forum_old
         self.chat, self.chat_format = formatter.generate_forum(
-            self.messages + self.forum_old,
+            messages,
             self.blocked,
             self.chat_dim[1],
             self.colors,
             self.colors_formatted,
             self.config,
         )
-
+        self.chat_indexes = [1] * len(messages)
+        self.chat_map = [None] * len(messages)
+        self.tui.set_wide_map([])
 
     def update_member_list(self, last_index=None, reset=False):
         """Generate member list and update it in TUI"""
@@ -5998,7 +6018,6 @@ class Endcord:
                         for element in MESSAGE_UPDATE_ELEMENTS:
                             loaded_message[element] = data[element]
                             loaded_message["spoiled"] = []
-                        loaded_message["edited"] = True
                         # check if this message has emoji and clear it before redraw
                         msg_line_index = self.msg_to_lines(num)
                         if msg_line_index in self.tui.wide_map:
@@ -7118,10 +7137,10 @@ class Endcord:
                             self.slowmode_thread.start()
 
             # remove unseen after scrolled to bottom on unseen channel
-            if self.new_unreads or self.this_uread:
+            if self.new_unreads or self.this_unread:
                 if text_index == 0:
                     self.new_unreads = False
-                    self.this_uread = False
+                    self.this_unread = False
                     self.update_status_line()
                     self.set_channel_seen(self.active_channel["channel_id"], self.get_chat_last_message_id())
 
