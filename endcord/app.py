@@ -5972,8 +5972,7 @@ class Endcord:
                 nonce = data.pop("nonce", None)
             if self.emoji_as_text:
                 data = formatter.demojize_message(data)
-            if self.get_chat_last_message_id() == self.last_message_id:   # only if viewing latest chat chunk
-                self.messages.insert(0, data)
+            self.messages.insert(0, data)
             self.last_message_id = data["id"]
             # remove pending message
             if my_message and self.show_pending_messages:
@@ -6079,6 +6078,9 @@ class Endcord:
         data = new_message["d"]
         op = new_message["op"]
         if op == "MESSAGE_CREATE":
+            if data["channel_id"] == self.active_channel["channel_id"]:
+                self.last_message_id = data["id"]
+                self.new_unreads = True
             if self.emoji_as_text:
                 data = formatter.demojize_message(data)
             if data.get("user_id") == self.my_id and self.show_pending_messages:
