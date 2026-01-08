@@ -8,37 +8,37 @@ Codename: stable
 Architectures: amd64
 Components: main
 Description: Unofficial community repack of Endcord - Not affiliated with the official Endcord team
-Date: Wed, 07 Jan 2026 02:42:38 +0000
-Date: Wed, 07 Jan 2026 02:42:38 +0000
+Date: Thu, 08 Jan 2026 02:41:48 +0000
+Date: Thu, 08 Jan 2026 02:41:48 +0000
 MD5Sum:
- 111da69307386fc5383ba894c0129863              304 Release
- d352af7f14474bd8ff37fafec77cb422             1794 main/binary-amd64/Packages
- b5f39abd1cde8f43fbdd8d0e2cab5de2              781 main/binary-amd64/Packages.gz
+ 105442b0dcfba2be83a8653c6bf7cef7              304 Release
+ 8024336b90936fe3d173ff91b5e58e73             2691 main/binary-amd64/Packages
+ 4830f2db139ae34c7e57543cf1737af8              967 main/binary-amd64/Packages.gz
 SHA1:
- 319b618a3235df5d4b6ed05cc0c48561820a5e52              304 Release
- ded8b5daf9f44fade272b853fd64bf17b48ee8a1             1794 main/binary-amd64/Packages
- 05c3457dd5497b972b4f50b870eb66a42511fc96              781 main/binary-amd64/Packages.gz
+ a11023d124d175898b3ead7743b1d9841cb9d157              304 Release
+ f1769a7cb5efdcdd7441fd8bd39f2da9d5ce3fb6             2691 main/binary-amd64/Packages
+ da39604c4f622a23a23b403308a2d011f8a563db              967 main/binary-amd64/Packages.gz
 SHA256:
- fd4df424a81de3546cde7a2d469c6262bb75b8027bbe1e16e44ce5fcefc7c1e9              304 Release
- 423714a132438a8f62f4b0b392204bbb35b9819248c726c63712350c4b021601             1794 main/binary-amd64/Packages
- f6e4466371fb6c4660430256d7bd9f1e6c1af452c1178649b18539824baf2bc3              781 main/binary-amd64/Packages.gz
+ 0bb2c8d077e97dfd827ca7592877a73eecafc054c9c86cfa5b7efbc1389c02dd              304 Release
+ 2d39fd1e0fbc0d6914654776a49a954cac4dc2dc0373227823a287e96f7a9817             2691 main/binary-amd64/Packages
+ c0585443eaef879a5020a300929547a6c81daf77d029530f6916412b1ccaa66b              967 main/binary-amd64/Packages.gz
 SHA512:
- d15d94ea2862cd30a2cf8ab67f25f9ed41801eb7d5d52d2fa9a820699b32e2035b1094d46e523adf128563018ede0d0c7acdb15e08619b5edbd9f8e58d593429              304 Release
- 3fb15e2794a9c21fb90a8bbd49993b5f17bd1cc54a73a91dc8b76c664a5dc62e3ea120c4f98f6190ba9f5f4befb644ddcb235a26d472ec000960efffd74ea9ae             1794 main/binary-amd64/Packages
- c2a40da2630ad262f28ab160e9a4ce74721dd1ba9f5ec5000cc56a66e304c9444243a71f5679380a883cf0d78addb370de797de7b713e9c53c0a9ca51b70d80c              781 main/binary-amd64/Packages.gz
+ c6cd1beb927d9929e75d7316e421cebb225a94b7fa81193e74da6b1c4e047172933bc27ad71f08b8aaa3fff771c8068eb641609b6e93fbb920a6a43d77d7e1a8              304 Release
+ 9cf173e6b2cb7664039d389139053686036493885f979a990b51f7ef6de2f3e98cc5fbe6bf0183dd3936f779dbf3f363a49aacf771db8a9857473ce1a2507dfe             2691 main/binary-amd64/Packages
+ 3ebde5cbb5f1fc006e9e6611038078ee00efe3c20e40671855797ac2bf87f724f582d9f0dea99b894e1b06a2beff85ad087e1aa058754332fd347a456d5aad2a              967 main/binary-amd64/Packages.gz
 -----BEGIN PGP SIGNATURE-----
 
-iQIzBAEBCgAdFiEEB2s5bA+O91b62Xr6/ZewFxhWl4kFAmldyB8ACgkQ/ZewFxhW
-l4mbmA//ZB8p8deojXhXZQqGYiuEZia/vNrfcDI4jYIfH3FoltXe4E78XliULiYP
-AGcaD4sppOekzpPnPiC+7zOqA/7pUt0jqey4MEuHRRVdDE9nA0ZxQMrW1agDW/MM
-gbDQ2NW+P2GxJRM3+ge02/3/q5t3rDdDlpNw+TQJDGtfhCzpYNOwRIc0oGW6yBXX
-M+CCrmEjgNlG8C/cGB7dRc9FmBGB1xssjk0vC6gwkAQFSFzJUU2mdFuAjJ6T9Civ
-s9RryYyvbqUk/V5l8LP8zyAe0EsrdP8T4ucYAAUZIEnu4Y7zAJOhADq9t7hm3XyR
-Nrx9NHVmyLGe9U8rBuE3hjMK126ji/7TVDfu8grrxIWxsl4U+Fjrp8EjdR5T4zSp
-fgh4Zj8+f0flPODA1INlWCF65Huaz32eRM2SekVD00RfCO9/ZDcJ4K33SwobPSXK
-hKy17sZ0Q+/+aso9JvPvmCA0XmlHx9TVDRXMKU3LylGuk95Sp0B2U0Me41+EJAcG
-YOGGGXr0tQS5QnNcXZNqwoEP6HBajB0WO/mCtpKC1ZYwIkkYDCGRNhxviW/ipWYV
-D9AxY+fMm4rns90xUVuu3f28LP3cODK1B5Grvt0spi5QM9jfDQFGPlvRzWGpjJQW
-as7/NSqU4JF/xOYmWwj6OSTSKiUgs9S5iD82xGO5/3CvDYAiQOg=
-=tugy
+iQIzBAEBCgAdFiEEB2s5bA+O91b62Xr6/ZewFxhWl4kFAmlfGW0ACgkQ/ZewFxhW
+l4m6aQ//YcN7KZ+fP3juCNWcuCdL3MySlNsOKhDvHP0YMUWAVyaxJM2On1pmU+Ol
+S1vjXYe9ip0mwtiaBl/0J5uMNJvpvx3PzhI1F0m+nkkU7iN7Cq+g2IL0DI29BxQL
+18I72XKE7jfvIh9DGaQZH4QinzMJovCgayb8awS1fsxMnvSk6s5GzbFVz0MMTMUy
+34vJeWFR9UwjMS7gzsYwj0dksnJlMAqamyI44KOUogLEGh+m5D4vsbB/lnAOHb85
+LGmq+1FrW8mOTSzw2JzeW04t6yDsWmBWGSS9EWOd8xxLSR03l8uEGAth4TQvlgIC
+hwePMle1LsARn3aDo0CZvgCEQrVWEJfiF2JBsMD/8ze8zndCQ6E/OLCbkxF6Rke7
+bBa5Of0n3NOLO67wJygpBlm5wJdVxqFllxc5exLW1YgILb9zjIOB6SOIJ1muS8OS
+P3XH3VTpQiVKe3lgBdCZ3G8558k+Eb/G4Ik7Yd80CGZX4lrDU2nYHz5bofhcsGd8
+oH+XpbVYi658+mG2Ovpl38gBtLKwVIJeTTgIsIQXSVUv3r7d3asL0GRb0y5rw+dL
+0kyV5qvC+aT+ImMGe5wetOKK3nFuO3kZ+/RIHNYwRRV/XUNzzWn2+iNkH2LkXRSP
+hGn2o6KKjC03VdUn1hqG1WI72EhRn20qtwpl+N1YOnR8OA5wFzw=
+=goV+
 -----END PGP SIGNATURE-----
