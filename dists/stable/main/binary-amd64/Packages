@@ -55,3 +55,22 @@ Description: Feature rich Discord TUI client (Unofficial Community Repack)
  Packaged by fans - Not affiliated with or endorsed by the official Endcord team.
  Upstream project: https://github.com/sparklost/endcord
 
+Package: endcord
+Architecture: amd64
+Version: 1.1.7-nightly20260109
+Priority: optional
+Section: net
+Maintainer: Endcord Fork Maintainer <no-reply@github.com>
+Installed-Size: 76404
+Filename: pool/main/endcord_1.1.7-nightly20260109_amd64.deb
+Size: 77614776
+MD5sum: 1a6be5a962a75e5c0655a4b4b2961a92
+SHA1: 76dc6743ba06d52887d3625f25177ca61cce0524
+SHA256: 90c56bfb7494c04b064398aac2ef412d6e12bb2bc3e90fd6d6cfbdd230a99eb0
+SHA512: 576323e101921ee3ec1394b383ab341cb42f56089cbe35553145508cbd83f22322a69521a0e16c75dd97ea9a043a07395e44f665962e54819d76adaee58f257e
+Homepage: https://github.com/sparklost/endcord
+Description: Feature rich Discord TUI client (Unofficial Community Repack)
+ This is an unofficial community repack of Endcord for easier Debian installation.
+ Packaged by fans - Not affiliated with or endorsed by the official Endcord team.
+ Upstream project: https://github.com/sparklost/endcord
+
