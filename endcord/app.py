@@ -1240,6 +1240,19 @@ class Endcord:
             self.update_tabs(add_current=True)
 
 
+    def set_dm_first(self, dm_id, update_tree=True):
+        """Set specified dm to be first it tree"""
+        for i, channel in enumerate(self.dms):
+            if channel.get("id") == dm_id:
+                if i == 0:
+                    return False
+                self.dms.insert(0, self.dms.pop(i))
+                if update_tree:
+                    self.update_tree()
+                return True
+        return False
+
+
     def reset_states(self, replying=False, reacting=True):
         """Reset all states except replying"""
         if replying:
@@ -2207,7 +2220,10 @@ class Endcord:
                             num = max(int(input_text) - 1, 0)
                             if num <= len(self.downloading_file["urls"]):
                                 url = self.refresh_attachment_url(urls[num])
-                                webbrowser.open(url, new=0, autoraise=True)
+                                if self.downloading_file["web"] == 1:
+                                    webbrowser.open(url, new=0, autoraise=True)
+                                else:
+                                    peripherals.copy_to_clipboard(url)
                         except ValueError:
                             pass
                     elif self.downloading_file["open"]:
@@ -2590,7 +2606,7 @@ class Endcord:
                     self.restore_input_text = (None, "prompt")
                     reset = False
 
-        elif cmd_type == 5:   # OPEN_LINK
+        elif cmd_type in (5, 64):   # OPEN_LINK and COPY_LINK
             msg_index = self.lines_to_msg(chat_sel)
             select_num = cmd_args.get("num", 0)
             selected_urls = []
@@ -2601,12 +2617,15 @@ class Endcord:
                 if len(selected_urls) == 1 or select_num:
                     select_num = max(min(select_num-1, len(selected_urls)-1), 0)
                     selected_url = self.refresh_attachment_url(selected_urls[select_num])
-                    webbrowser.open(selected_url, new=0, autoraise=True)
+                    if cmd_type == 5:
+                        webbrowser.open(selected_url, new=0, autoraise=True)
+                    else:
+                        peripherals.copy_to_clipboard(selected_url)
                 else:
                     self.ignore_typing = True
                     self.downloading_file = {
                         "urls": selected_urls,
-                        "web": True,
+                        "web": 1 if cmd_type == 5 else 2,
                         "open": False,
                     }
                     self.restore_input_text = (None, "prompt")
@@ -3455,6 +3474,8 @@ class Endcord:
                 cmd_args["ping"],
                 cmd_args["attachments"],
             )).start()
+
+        # 64 - COPY_LINK is handled together with 5 - OPEN_LINK
 
         elif cmd_type == 66 and self.fun:   # 666
             self.fun = 1 if self.fun == 2 else 2
@@ -7044,6 +7065,9 @@ class Endcord:
                         self.process_msg_events_other_channels(new_message)
                     # remove ghost pings
                     self.process_msg_events_ghost_ping(new_message)
+                    # rearrange dms
+                    if not new_message["d"]["guild_id"]:
+                        self.set_dm_first(new_message_channel_id)
                 else:
                     break
 

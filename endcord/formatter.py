@@ -1526,7 +1526,7 @@ def generate_status_line(my_user_data, my_status, unseen, typing, active_channel
     elif action["type"] == 3:   # confirm deleting
         action_string = "Really delete the message? [Y/n]"
     elif action["type"] == 4:   # select from multiple links
-        action_string = "Select link to open in browser (type a number)"
+        action_string = "Select link (type a number)"
     elif action["type"] == 5:   # select from multiple attachments
         action_string = "Select attachment link to download (type a number)"
     elif action["type"] == 6:   # select attachment media to play
