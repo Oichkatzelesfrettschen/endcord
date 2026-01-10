@@ -962,7 +962,7 @@ def generate_chat(messages, roles, channels, max_length, my_id, my_roles, member
                 filler_r = filler - filler_l
                 temp_chat.append(f"{date_separator * filler_l}{date}{date_separator * filler_r}")
                 temp_format.append([color_separator])
-                temp_chat_map.append(None)
+                temp_chat_map.append((num, None, None, None, None, None, None))
         except IndexError:
             pass
 
