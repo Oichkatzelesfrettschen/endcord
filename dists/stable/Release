@@ -5,21 +5,21 @@ Codename: stable
 Architectures: amd64
 Components: main
 Description: Unofficial community repack of Endcord - Not affiliated with the official Endcord team
-Date: Sat, 10 Jan 2026 02:38:30 +0000
-Date: Sat, 10 Jan 2026 02:38:30 +0000
+Date: Sun, 11 Jan 2026 02:50:14 +0000
+Date: Sun, 11 Jan 2026 02:50:14 +0000
 MD5Sum:
- 6d51c0cd6f8e78e4d295f03e75828b64              304 Release
- 0df74c38b3fb3c079669ee14a29e50ca             4485 main/binary-amd64/Packages
- 8296d1538e7ccfcb512752882459659d             1338 main/binary-amd64/Packages.gz
+ 1952773ff1e7ff550fcfb8b8adbdb32e              304 Release
+ 7a491175208f787f7214d64b510cb511             5382 main/binary-amd64/Packages
+ 388d1e7838d9de117efc836b13b1ac8c             1535 main/binary-amd64/Packages.gz
 SHA1:
- 9a37a0958248ac878468204a067b1defd08e8139              304 Release
- 034a7387eea0546295d3611a92fa7224fb7d1222             4485 main/binary-amd64/Packages
- f5d8734cd062e5799cd120a71c103394fbf67f8d             1338 main/binary-amd64/Packages.gz
+ 8759d14b6ed16934722f0f6d181a20b0213c3d0d              304 Release
+ a2e6012fdabbd23116690cd000af9c17ff3ccf66             5382 main/binary-amd64/Packages
+ 0c1a24b16f6037df94ddba34eaaf6cf23bc4d731             1535 main/binary-amd64/Packages.gz
 SHA256:
- 73cc890349f34b2a10f1ee7de9ed8f72ca42cfeadbc54272518cf602900f5fd8              304 Release
- e3a2b357d2d3eb3b5800b61b4ec1b82171f5f5c00f1a8b7869e3e01d2c27ba03             4485 main/binary-amd64/Packages
- ba69fd35de1a19e466511baf706c27415da580a67d58d8f79c0ec1d81627604a             1338 main/binary-amd64/Packages.gz
+ 5e09a5f6749beb1c9c959db4756150645583baff82807e3d1690041bb8e71168              304 Release
+ d228ef09c0929f797c7a30ffadcfb5eabcc672b225c1d8d558ea761365badf10             5382 main/binary-amd64/Packages
+ 0f5691b4a7ab8358ed032a05e610397308c0bf9f0ecde181761b3a48774f15d9             1535 main/binary-amd64/Packages.gz
 SHA512:
- 9f6a687f0e3c19ca6d5288f7f556423b2c9b2c2dee99d1b516435e2b114d4881df9b064b6b8e8d764dc4fd07e05d811ea6a239b3b705a756aeaf136c0d1c138b              304 Release
- 328e62ee21062c133f670fbace6d6d330041704e0d909a1c9c04119172dcb7038a0947b4523b9f7b6fa1b35d4425ee3f4a33a8fedd6bb81b4797488916aa031d             4485 main/binary-amd64/Packages
- 00d7b21ce0d805e8058a78108889f4e848ed1b0562673d84f8097e31999b6b93331d53bd5e08a071a17350741ebd57c0c44fcf8a76be36b065f3d54976ee6b5c             1338 main/binary-amd64/Packages.gz
+ 3f39d1886ef03120444835d3c28d12b9ab9d62cd8642089feaae32e228e665e9a42533325fcb7b9606d2900c5a3fcbb74bf09e3f4b510a58a21dfe2086ef97f0              304 Release
+ 5e8f8fad7045430b6fdf1c92da9a70516d7e74363211a0ac322ebe61891e3be08fb8bee446a2b5437180e90306e0502d66f0337a1946dc236ca872ca60b5be7a             5382 main/binary-amd64/Packages
+ ac3155e7789da1aaf05367afa1244aae0f4464a357af6733ffc8bd597d8ab55564f055a43967757017a5882d81e04a6875c56b845737acb691b32ae666c2eb6e             1535 main/binary-amd64/Packages.gz
